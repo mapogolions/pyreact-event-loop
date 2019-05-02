@@ -15,7 +15,3 @@ class TestTimer(unittest.TestCase):
         self.assertIn(timer1, timers)
         self.assertIn(timer2, timers)
         self.assertNotIn(timer3, timers)
-
-
-if __name__ == "__main__":
-    unittest.main()

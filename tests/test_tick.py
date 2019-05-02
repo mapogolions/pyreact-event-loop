@@ -24,7 +24,3 @@ class TestTick(unittest.TestCase):
         self.assertEqual(3, mock.call_count)
         self.assertEqual(unittest.mock.call("third"), mock.call_args)
         self.assertIs(True, queue.empty())
-
-
-if __name__ == "__main__":
-    unittest.main()

@@ -27,23 +27,6 @@ class Signals:
         if listener not in self.signals[signal]:
             return False
         self.signals[signal].remove(listener)
+        if not self.signals[signal]:
+            del self.signals[signal]
         return True
-
-
-if __name__ == "__main__":
-    signals = Signals()
-    assert signals.empty() is True, "Empty"
-    assert signals.remove("JUCE_SIGNAL", lambda: None) is False, ""
-    assert signals.count("JUCE_SIGNAL") == 0, ""
-    side_effect = []
-    juce_signal_first = lambda: side_effect.append("JUCE_SIGNAL_FIRST")
-    juce_signal_second = lambda: side_effect.append("JUCE_SIGNAL_SECOND")
-    signals.add("JUCE_SIGNAL", juce_signal_first)
-    assert signals.count("JUCE_SIGNAL") == 1, ""
-    assert signals.empty() is False, ""
-    signals.add("JUCE_SIGNAL", juce_signal_second)
-    assert signals.count("JUCE_SIGNAL") == 2, ""
-    assert signals.remove("JUCE_SIGNAL", juce_signal_first) is True, ""
-    assert signals.count("JUCE_SIGNAL") == 1, ""
-    signals.call("JUCE_SIGNAL")
-    assert side_effect[0] == "JUCE_SIGNAL_SECOND", ""
