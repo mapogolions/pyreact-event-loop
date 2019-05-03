@@ -20,7 +20,7 @@ class Timers:
 
     def tick(self):
         timestamp = self.update_time()
-        while self.schedule and self.schedule[0] < timestamp:
+        while self.schedule and self.schedule[0][0] < timestamp:
             (_, tid, timer) = heapq.heappop(self.schedule)
             if tid not in self.timers or timer is not self.timers[tid]:
                 continue

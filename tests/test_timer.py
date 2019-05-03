@@ -6,13 +6,78 @@ import loop.timer as timer
 
 
 class TestTimer(unittest.TestCase):
+    def test_order_calls_of_timers(self):
+        mock = unittest.mock.Mock()
+        timers = timer.Timers()
+        timers.add(timer.Timer(0, lambda: mock(1)))
+        timers.add(timer.Timer(0, lambda: mock(2)))
+
+        time.sleep(0.1)
+        timers.tick()
+
+        self.assertTrue(timers.empty())
+        self.assertEqual(
+            [unittest.mock.call(1), unittest.mock.call(2)],
+            mock.call_args_list
+        )
+
+    def test_periodic_timer_will_be_left(self):
+        mock = unittest.mock.Mock()
+        timers = timer.Timers()
+        timers.add(timer.Timer(0, lambda: mock()))
+        timers.add(timer.Timer(0, lambda: mock(), periodic=True))
+
+        time.sleep(0.1)
+        timers.tick()
+
+        self.assertEqual(2, mock.call_count)
+
+
+
+    def test_call_all_timers(self):
+        mock = unittest.mock.Mock()
+        timers = timer.Timers()
+        for interval in [0, 0, 0]:
+            timers.add(timer.Timer(interval, lambda: mock()))
+
+        time.sleep(0.1)
+        timers.tick()
+
+        self.assertTrue(timers.empty())
+        self.assertEqual(3, mock.call_count)
+
+    def test_call_one_timer(self):
+        mock = unittest.mock.Mock()
+        timers = timer.Timers()
+        for interval in [3, 0, 4]:
+            timers.add(timer.Timer(interval, lambda: mock()))
+
+        time.sleep(0.1)
+        timers.tick()
+
+        self.assertFalse(timers.empty())
+        self.assertEqual(1, mock.call_count)
+        self.assertEqual(2, len(timers.timers))
+        self.assertEqual(2, len(timers.schedule))
+
+    def test_eager_call_of_timers(self):
+        mock = unittest.mock.Mock()
+        timers = timer.Timers()
+        for interval in [10, 5, 3]:
+            timers.add(timer.Timer(interval, lambda: mock()))
+
+        timers.tick()
+
+        self.assertFalse(timers.empty())
+        self.assertEqual(0, mock.call_count)
+
     def test_empty(self):
         timers = timer.Timers()
         self.assertTrue(timers.empty())
 
     def test_add_timer(self):
         timers = timer.Timers()
-        for interval in range(1, 4):
+        for interval in range(2, 5):
             timers.add(timer.Timer(interval, lambda: None))
         self.assertFalse(timers.empty())
         self.assertEqual(3, len(timers.schedule))
