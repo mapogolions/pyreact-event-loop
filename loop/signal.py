@@ -16,7 +16,7 @@ class Signals:
                 listener()
 
     def add(self, signal, listener):
-        if signal not in  self.signals:
+        if signal not in self.signals:
             self.signals[signal] = []
         if listener not in self.signals[signal]:
             self.signals[signal].append(listener)

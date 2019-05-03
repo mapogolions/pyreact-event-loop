@@ -1,5 +1,5 @@
 import time
-from collections import OrderedDict
+import heapq
 
 
 MIN_INTERVAL = 0.000001
@@ -14,58 +14,61 @@ class Timer:
 
 class Timers:
     def __init__(self):
-        self._time = None
+        self.time = None
         self.timers = {}
-        self.schedule = OrderedDict()
-        self.sorted = False
+        self.schedule = []
 
-    def tick():
-        if not self.sorted:
-            self.sort_by_time()
-        time = self.time
-        for (id, scheduled_in) in self.schedule.items():
-            if scheduled_in >= time:
-                return
-            timer = self.timers[id]
+    def tick(self):
+        timestamp = self.update_time()
+        while self.schedule and self.schedule[0] < timestamp:
+            (_, tid, timer) = heapq.heappop(self.schedule)
+            if tid not in self.timers or timer is not self.timers[tid]:
+                continue
+            timer = self.timers[tid]
             timer.callback()
-            del self.timers[id]
-            del self.schedule[id]
-
-    def sort_by_time(self):
-        self.sorted = True
-        self.schedule = OrderedDict(
-            sorted(self.schedule.items(), lambda xs: xs[1])
-        )
+            if timer.periodic:
+                heapq.heappush(
+                    self.schedule,
+                    (timestamp + timer.interval, tid, timer)
+                )
+            else:
+                self.garbage_collect(tid)
 
     def __contains__(self, timer):
         return hash(timer) in self.timers
 
-    @property
-    def time(self):
-        return self.update_time() if self._time is None else self._time
+    def get_time(self):
+        return self.update_time() if self.time is None else self.time
 
     def update_time(self):
-        self._time = time.time()
-        return self._time
+        self.time = time.time()
+        return self.time
 
     def empty(self):
         return len(self.timers) == 0
 
     def add(self, timer):
-        id = hash(timer)
-        self.timers[id] = timer
-        self.schedule[id] = timer.interval + self.update_time()
-        self.sorted = False
+        tid = hash(timer)
+        self.timers[tid] = timer
+        heapq.heappush(
+            self.schedule,
+            (timer.interval + self.update_time(), tid, timer)
+        )
 
     def cancel(self, timer):
-        id = hash(timer)
-        del self.timers[id]
-        del self.schedule[id]
+        return self.garbage_collect(hash(timer))
 
     def get_first(self):
-        if not self.sorted:
-            self.sorted = True
-            self.schedule = OrderedDict(
-                sorted(self.schedule.items(), lambda xs: xs[1])
-            )
-        return self.schedule.items(0)
+        (scheduled_at, tid, _) = self.schedule[0]
+        return (scheduled_at, self.timers[tid])
+
+    def garbage_collect(self, tid):
+        if tid not in self.timers:
+            return False
+        del self.timers[tid]
+        for i in range(0, len(self.schedule)):
+            (_, code, _) = self.schedule[i]
+            if tid == code:
+                self.schedule.pop(i)
+                heapq.heapify(self.schedule)
+        return True
