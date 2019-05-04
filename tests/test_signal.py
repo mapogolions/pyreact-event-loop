@@ -26,13 +26,11 @@ class TestSignal(unittest.TestCase):
         signals = signal.Signals()
         listener1 = lambda: None
         listener2 = lambda: None
-        signals.add("SIGNAL1", listener1)
-        signals.add("SIGNAL2", listener2)
-        self.assertFalse(signals.remove("SIGNAL1", listener2))
-        self.assertFalse(signals.remove("SIGNAL2", listener1))
-        self.assertTrue(signals.remove("SIGNAL1", listener1))
-        self.assertTrue(signals.remove("SIGNAL2", listener2))
-        self.assertTrue(signals.empty())
+        signals.add("SIGNAL", listener1)
+        signals.remove("SIGNAL", listener2)
+        self.assertEqual(1, signals.count("SIGNAL"))
+        signals.remove("SIGNAL", listener1)
+        self.assertEqual(0, signals.count("SIGNAL"))
 
     def test_call_signal_listeners(self):
         signals = signal.Signals()
