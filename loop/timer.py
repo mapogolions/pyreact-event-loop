@@ -59,6 +59,8 @@ class Timers:
         return self.garbage_collect(hash(timer))
 
     def get_first(self):
+        if not self.schedule:
+            return None
         (scheduled_at, tid, _) = self.schedule[0]
         return (scheduled_at, self.timers[tid])
 

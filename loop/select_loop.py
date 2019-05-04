@@ -71,3 +71,6 @@ class SelectLoop:
         self.signals.remove(signum, listener)
         if self.signals.count(signum) == 0:
             signal.signal(signum, signal.SIG_DFL)
+
+    def stop(self):
+        self.running = False

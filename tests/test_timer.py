@@ -98,6 +98,10 @@ class TestTimer(unittest.TestCase):
         (_, first) = timers.get_first()
         self.assertEqual(4, first.interval)
 
+    def test_get_first_timer_if_schedule_is_empty(self):
+        timers = Timers()
+        self.assertIsNone(timers.get_first())
+
     def test_get_time(self):
         timers = Timers()
         self.assertIsNone(timers.time)
