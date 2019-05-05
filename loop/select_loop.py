@@ -1,4 +1,7 @@
+import select
+import sys
 import signal
+import time
 
 from loop.tick import FutureTickQueue
 from loop.timer import Timer, Timers
@@ -12,36 +15,32 @@ class SelectLoop:
     def __init__(self):
         self.future_tick_queue = FutureTickQueue()
         self.timers = Timers()
-        self.read_streams = {}
+        self.read_streams = []
         self.read_listeners = {}
-        self.write_streams = {}
+        self.write_streams = []
         self.write_listeners = {}
         self.running = False
         self.signals = Signals()
 
     def add_read_stream(self, stream, listener):
-        key = int(stream)
-        if key not in self.read_streams:
-            self.read_streams[key] = stream
-            self.read_listeners[key] = listener
+        if stream not in self.read_streams:
+            self.read_streams.append(stream)
+            self.read_listeners[int(stream)] = listener
 
     def add_write_stream(self, stream, listener):
-        key = int(stream)
-        if key not in self.write_streams:
-            self.write_streams[key] = stream
-            self.write_listeners[key] = listener
+        if stream not in self.write_streams:
+            self.write_streams.append(stream)
+            self.write_listeners[int(stream)] = listener
 
     def remove_read_stream(self, stream):
-        key = int(stream)
-        if key in self.read_streams:
-            del self.read_streams[key]
-            del self.read_listeners[key]
+        if stream in self.read_streams:
+            self.read_streams.remove(stream)
+            del self.read_listeners[int(stream)]
 
     def remove_write_stream(self, stream):
-        key = int(stream)
-        if key in self.write_streams:
-            del self.write_streams[key]
-            del self.write_listeners[key]
+        if stream in self.write_streams:
+            self.write_streams.remove(stream)
+            del self.write_listeners[int(stream)]
 
     def add_timer(self, interval, callback):
         timer = Timer(interval, callback, periodic=False)
@@ -74,3 +73,41 @@ class SelectLoop:
 
     def stop(self):
         self.running = False
+
+    # not complete !!!
+    def run(self):
+        self.running = True
+        while self.running:
+            self.future_tick_queue.tick()
+            self.timers.tick()
+            metadata = self.timers.get_first()
+            if metadata:
+                timeout = None
+                if self.stream_select(timeout):
+                    self.nofity()
+            elif self.read_streams or self.write_streams:
+                if self.stream_select(None):
+                    self.notify()
+            elif not self.signals.empty():
+                self.wait_for_come_signals()
+            else:
+                break
+
+    def stream_select(self, timeout):
+        return select.select(
+            self.read_streams,
+            self.write_streams,
+            [],
+            timeout
+        )
+
+    def wait_for_come_signals(self):
+        time.sleep(sys.maxsize)
+
+    def nofity(self):
+        for stream in self.read_streams:
+            listener = self.read_listeners[int(stream)]
+            listener(stream)
+        for stream in self.write_streams:
+            listener = self.write_streams[int(stream)]
+            listener(stream)
