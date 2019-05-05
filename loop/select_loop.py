@@ -85,7 +85,13 @@ class SelectLoop:
             self.future_tick_queue.tick()
             self.timers.tick()
             struct_timer_info = self.timers.get_first()
-            if struct_timer_info:
+
+            """event_loop.future_tick( lambda: event_loop.future_tick(lambda: pass) )"""
+            """event_loop.add_timer(0.03, lambda: event_loop.future_tick(lambda: pass))"""
+            """event_loop.future_tick( lambda: event_loop.stop() ) """
+            if not self.running or not self.future_tick_queue.empty():
+                pass
+            elif struct_timer_info:
                 self.wait_for_timers_execution(struct_timer_info)
             elif self.read_streams or self.write_streams:
                 self.notify(self.select_stream(None))
@@ -113,13 +119,13 @@ class SelectLoop:
         (rs, ws) = (self.read_streams, self.write_streams)
         return select.select(rs, ws, [], timeout)
 
-    def nofity(self, result):
-        if result:
+    def nofity(self, streams):
+        if streams:
             return
-        (rlist, wlist, _) = result
-        for stream in rlist:
+        (rs, ws, _) = streams
+        for stream in rs:
             listener = self.read_listeners[int(stream)]
             listener(stream)
-        for stream in wlist:
+        for stream in ws:
             listener = self.write_streams[int(stream)]
             listener(stream)
