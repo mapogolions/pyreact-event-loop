@@ -7,7 +7,6 @@ from loop.tick import FutureTickQueue
 from loop.timer import Timer, Timers
 from loop.signal import Signals
 
-
 MICROSECONDS_PER_SECOND = 10 ** 6
 
 
@@ -58,56 +57,69 @@ class SelectLoop:
     def future_tick(self, listener):
         self.future_tick_queue.add(listener)
 
+    def helper(self, signum):
+        signal.call
+
     def add_signal(self, signum, listener):
-        first = self.signals.count(signum)
         self.signals.add(signum, listener)
-        if first:
-            signal.signal(signum, lambda *meta: self.signals.call(meta[0]))
+        if self.signals.count(signum) == 1:
+            signal.signal(
+                signum,
+                lambda *args: self.signals.call(args[0])
+            )
 
     def remove_signal(self, signum, listener):
-        if self.signals.count(signum) == 0:
+        if not self.signals.count(signum):
             return
         self.signals.remove(signum, listener)
-        if self.signals.count(signum) == 0:
+        if not self.signals.count(signum):
             signal.signal(signum, signal.SIG_DFL)
 
     def stop(self):
         self.running = False
 
     # not complete !!!
-    def run(self):
+    def launch(self):
         self.running = True
         while self.running:
             self.future_tick_queue.tick()
             self.timers.tick()
-            metadata = self.timers.get_first()
-            if metadata:
-                timeout = None
-                if self.stream_select(timeout):
-                    self.nofity()
+            struct_timer_info = self.timers.get_first()
+            if struct_timer_info:
+                self.wait_for_timers_execution(struct_timer_info)
             elif self.read_streams or self.write_streams:
-                if self.stream_select(None):
-                    self.notify()
+                self.notify(self.select_stream(None))
             elif not self.signals.empty():
-                self.wait_for_come_signals()
+                signal.pause()
             else:
                 break
 
+    def wait_for_timers_execution(self, struct_timer_info):
+        (scheduled_at, timer) = struct_timer_info
+        timeout = self.define_timeout(scheduled_at - self.timers.get_time())
+        if self.read_streams or self.write_streams:
+            self.notify(self.select_stream(timeout))
+        else:
+            time.sleep(timeout)
+
+
+    def define_timeout(self, timeout):
+        if timeout < 0:
+            return 0
+        timeout /= MICROSECONDS_PER_SECOND
+        return sys.maxsize if timeout > sys.maxsize else timeout
+
     def stream_select(self, timeout):
-        return select.select(
-            self.read_streams,
-            self.write_streams,
-            [],
-            timeout
-        )
+        (rs, ws) = (self.read_streams, self.write_streams)
+        return select.select(rs, ws, [], timeout)
 
-    def wait_for_come_signals(self):
-        time.sleep(sys.maxsize)
-
-    def nofity(self):
-        for stream in self.read_streams:
+    def nofity(self, result):
+        if result:
+            return
+        (rlist, wlist, _) = result
+        for stream in rlist:
             listener = self.read_listeners[int(stream)]
             listener(stream)
-        for stream in self.write_streams:
+        for stream in wlist:
             listener = self.write_streams[int(stream)]
             listener(stream)
