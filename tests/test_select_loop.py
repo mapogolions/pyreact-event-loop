@@ -1,3 +1,5 @@
+import os
+import signal
 import socket
 import time
 import unittest
@@ -89,33 +91,6 @@ class TestSelectLoop(unittest.TestCase):
         self.loop.run()
 
         self.assertEqual(2, self.mock.call_count)
-
-    def test_future_tick(self):
-        self.loop.future_tick(lambda: self.mock(1))
-        self.loop.future_tick(lambda: self.mock(2))
-        self.loop.run()
-
-        self.assertEqual(
-            [unittest.mock.call(1), unittest.mock.call(2)],
-            self.mock.call_args_list
-        )
-
-    def test_fututre_tick_earlier_than_timers(self):
-        self.loop.add_timer(0, lambda: self.mock("timer 1"))
-        self.loop.add_timer(0.03, lambda: self.mock("timer 2"))
-        self.loop.add_timer(0, lambda: self.mock("timer 3"))
-        self.loop.future_tick(lambda: self.mock("tick 1"))
-        self.loop.future_tick(lambda: self.mock("tick 2"))
-        self.loop.run()
-
-        self.assertEqual(
-            [unittest.mock.call("tick 1"),
-             unittest.mock.call("tick 2"),
-             unittest.mock.call("timer 1"),
-             unittest.mock.call("timer 3"),
-             unittest.mock.call("timer 2")],
-            self.mock.call_args_list
-        )
 
     def test_remove_read_stream_instantly(self):
         self.loop.add_read_stream(self.rstream, self.mock)
@@ -214,6 +189,102 @@ class TestSelectLoop(unittest.TestCase):
             [unittest.mock.call("read"), unittest.mock.call("write")],
             self.mock.call_args_list
         )
+
+    def test_future_tick_event_generated_by_future_tick(self):
+        self.loop.future_tick(lambda: self.loop.future_tick(self.mock))
+        self.loop.run()
+        self.mock.assert_called_once()
+
+    def test_future_tick_event_generated_by_timer(self):
+        self.loop.add_timer(
+            0.01,
+            lambda: self.loop.future_tick(self.mock)
+        )
+        self.loop.run()
+        self.mock.assert_called_once()
+
+    def test_future_tick(self):
+        self.loop.future_tick(lambda: self.mock(1))
+        self.loop.future_tick(lambda: self.mock(2))
+        self.loop.run()
+
+        self.assertEqual(
+            [unittest.mock.call(1), unittest.mock.call(2)],
+            self.mock.call_args_list
+        )
+
+    def test_future_tick_fires_before_IO(self):
+        stream = self.rstream
+        self.loop.add_write_stream(stream, lambda stream: self.mock("io"))
+        self.loop.future_tick(lambda: self.mock("tick"))
+        self.next_tick()
+        self.assertEqual(
+            [unittest.mock.call("tick"), unittest.mock.call("io")],
+            self.mock.call_args_list
+        )
+
+    def test_future_tick_fires_before_timers(self):
+        self.loop.add_timer(0, lambda: self.mock("timer 1"))
+        self.loop.add_timer(0.03, lambda: self.mock("timer 2"))
+        self.loop.add_timer(0, lambda: self.mock("timer 3"))
+        self.loop.future_tick(lambda: self.mock("tick 1"))
+        self.loop.future_tick(lambda: self.mock("tick 2"))
+        self.loop.run()
+
+        self.assertEqual(
+            [unittest.mock.call("tick 1"),
+             unittest.mock.call("tick 2"),
+             unittest.mock.call("timer 1"),
+             unittest.mock.call("timer 3"),
+             unittest.mock.call("timer 2")],
+            self.mock.call_args_list
+        )
+
+    def test_signal(self):
+
+        def cleanup():
+            nonlocal timer
+            self.loop.remove_signal(signal.SIGUSR1, cleanup)
+            self.loop.remove_signal(signal.SIGUSR2, self.mock)
+            self.loop.cancel_timer(timer)
+            self.mock("signal")
+
+        timer = self.loop.add_periodic_timer(1, lambda: self.mock("timer"))
+        self.loop.add_signal(signal.SIGUSR2, self.mock)
+        self.loop.add_signal(signal.SIGUSR1, cleanup)
+        self.loop.future_tick(lambda: os.kill(os.getpid(), signal.SIGUSR1))
+        self.loop.run()
+
+        self.assertEqual(
+            [unittest.mock.call("signal")],
+            self.mock.call_args_list
+        )
+
+    def test_signal_multiple_usages_for_the_same_listener(self):
+        self.loop.add_timer(1, lambda: None)
+        self.loop.add_signal(signal.SIGUSR1, self.mock)
+        self.loop.add_signal(signal.SIGUSR1, self.mock)
+        self.loop.add_timer(0.4, lambda: os.kill(os.getpid(), signal.SIGUSR1))
+        self.loop.add_timer(
+            0.9,
+            lambda: self.loop.remove_signal(signal.SIGUSR1, self.mock)
+        )
+        self.loop.run()
+        self.mock.assert_called_once()
+
+    def test_signals_keep_the_loop_running(self):
+        self.loop.add_signal(signal.SIGUSR1, self.mock)
+        self.loop.add_timer(
+            0.2,
+            lambda: self.loop.remove_signal(signal.SIGUSR1, self.mock)
+        )
+        self.assert_run_faster_than(0.3)
+
+    def test_timer_inteval_can_be_far_in_future(self):
+        timer = self.loop.add_timer(10 ** 6, self.mock)
+        self.loop.future_tick(lambda: self.loop.cancel_timer(timer))
+
+        self.assert_run_faster_than(0.02)
 
 
     def create_socket_pair(self):
