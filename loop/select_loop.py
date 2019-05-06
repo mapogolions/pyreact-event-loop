@@ -85,11 +85,9 @@ class SelectLoop:
         while self.running:
             self.future_tick_queue.tick()
             self.timers.tick()
+
             struct_timer_info = self.timers.get_first()
 
-            """event_loop.future_tick( lambda: event_loop.future_tick(lambda: pass) )"""
-            """event_loop.add_timer(0.03, lambda: event_loop.future_tick(lambda: pass))"""
-            """event_loop.future_tick( lambda: event_loop.stop() ) """
             if not self.running or not self.future_tick_queue.empty():
                 self.notify(self.select_stream(0))
             elif struct_timer_info:
