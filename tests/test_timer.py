@@ -6,96 +6,84 @@ from loop.timer import Timer, Timers
 
 
 class TestTimer(unittest.TestCase):
+    def setUp(self):
+        self.timers = Timers()
+        self.mock = unittest.mock.Mock()
+
     def test_order_calls_of_timers(self):
-        mock = unittest.mock.Mock()
-        timers = Timers()
-        timers.add(Timer(0, lambda: mock(1)))
-        timers.add(Timer(0, lambda: mock(2)))
+        self.timers.add(Timer(0, lambda: self.mock(1)))
+        self.timers.add(Timer(0, lambda: self.mock(2)))
 
         time.sleep(0.1)
-        timers.tick()
+        self.timers.tick()
 
-        self.assertTrue(timers.empty())
+        self.assertTrue(self.timers.empty())
         self.assertEqual(
             [unittest.mock.call(1), unittest.mock.call(2)],
-            mock.call_args_list
+            self.mock.call_args_list
         )
 
     def test_periodic_timer_will_be_left(self):
-        mock = unittest.mock.Mock()
-        timers = Timers()
-        timers.add(Timer(0, lambda: mock()))
-        timers.add(Timer(0, lambda: mock(), periodic=True))
+        self.timers.add(Timer(0, self.mock))
+        self.timers.add(Timer(0, self.mock, periodic=True))
 
         time.sleep(0.1)
-        timers.tick()
+        self.timers.tick()
 
-        self.assertEqual(2, mock.call_count)
-
-
+        self.assertEqual(2, self.mock.call_count)
 
     def test_call_all_timers(self):
-        mock = unittest.mock.Mock()
-        timers = Timers()
         for interval in [0, 0, 0]:
-            timers.add(Timer(interval, lambda: mock()))
+            self.timers.add(Timer(interval, self.mock))
 
         time.sleep(0.1)
-        timers.tick()
+        self.timers.tick()
 
-        self.assertTrue(timers.empty())
-        self.assertEqual(3, mock.call_count)
+        self.assertTrue(self.timers.empty())
+        self.assertEqual(3, self.mock.call_count)
 
     def test_call_one_timer(self):
-        mock = unittest.mock.Mock()
-        timers = Timers()
         for interval in [3, 0, 4]:
-            timers.add(Timer(interval, lambda: mock()))
+            self.timers.add(Timer(interval, self.mock))
 
         time.sleep(0.1)
-        timers.tick()
+        self.timers.tick()
 
-        self.assertFalse(timers.empty())
-        self.assertEqual(1, mock.call_count)
-        self.assertEqual(2, len(timers.timers))
-        self.assertEqual(2, len(timers.schedule))
+        self.assertFalse(self.timers.empty())
+        self.assertEqual(1, self.mock.call_count)
+        self.assertEqual(2, len(self.timers.timers))
+        self.assertEqual(2, len(self.timers.schedule))
 
     def test_eager_call_of_timers(self):
-        mock = unittest.mock.Mock()
-        timers = Timers()
         for interval in [10, 5, 3]:
-            timers.add(Timer(interval, lambda: mock()))
+            self.timers.add(Timer(interval, self.mock))
 
-        timers.tick()
+        self.timers.tick()
 
-        self.assertFalse(timers.empty())
-        self.assertEqual(0, mock.call_count)
+        self.assertFalse(self.timers.empty())
+        self.assertEqual(0, self.mock.call_count)
 
     def test_empty(self):
-        timers = Timers()
-        self.assertTrue(timers.empty())
+        self.assertTrue(self.timers.empty())
 
     def test_add_timer(self):
-        timers = Timers()
         for interval in range(2, 5):
-            timers.add(Timer(interval, lambda: None))
-        self.assertFalse(timers.empty())
-        self.assertEqual(3, len(timers.schedule))
-        self.assertEqual(3, len(timers.timers))
+            self.timers.add(Timer(interval, lambda: None))
+        self.assertFalse(self.timers.empty())
+        self.assertEqual(3, len(self.timers.schedule))
+        self.assertEqual(3, len(self.timers.timers))
 
     def test_cancel_timer(self):
-        timers = Timers()
         timer1 = Timer(0.1, lambda: None)
         timer2 = Timer(0.2, lambda: None)
-        timers.add(timer1)
-        self.assertTrue(timers.cancel(timer1))
-        self.assertFalse(timers.cancel(timer2))
+        self.timers.add(timer1)
+        self.assertTrue(self.timers.cancel(timer1))
+        self.assertFalse(self.timers.cancel(timer2))
 
     def test_get_first_timer(self):
-        timers = Timers()
         for interval in range(4, 8):
-            timers.add(Timer(interval, lambda: None))
-        (_, first) = timers.get_first()
+            self.timers.add(Timer(interval, lambda: None))
+        _, first = self.timers.get_first()
         self.assertEqual(4, first.interval)
 
     def test_get_first_timer_if_schedule_is_empty(self):
@@ -103,18 +91,16 @@ class TestTimer(unittest.TestCase):
         self.assertIsNone(timers.get_first())
 
     def test_get_time(self):
-        timers = Timers()
-        self.assertIsNone(timers.time)
-        self.assertLessEqual(time.time(), timers.get_time())
-        self.assertGreaterEqual(time.time(), timers.get_time())
+        self.assertIsNone(self.timers.time)
+        self.assertLessEqual(time.time(), self.timers.get_time())
+        self.assertGreaterEqual(time.time(), self.timers.get_time())
 
     def test_contains(self):
-        timers = Timers()
         timer1 = Timer(0.1, lambda: True)
         timer2 = Timer(0.1, lambda: False)
         timer3 = Timer(0.4, lambda: None)
-        timers.add(timer1)
-        timers.add(timer2)
-        self.assertIn(timer1, timers)
-        self.assertIn(timer2, timers)
-        self.assertNotIn(timer3, timers)
+        self.timers.add(timer1)
+        self.timers.add(timer2)
+        self.assertIn(timer1, self.timers)
+        self.assertIn(timer2, self.timers)
+        self.assertNotIn(timer3, self.timers)

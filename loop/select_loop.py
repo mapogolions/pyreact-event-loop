@@ -1,5 +1,4 @@
 import select
-import sys
 import signal
 import time
 
@@ -63,9 +62,6 @@ class SelectLoop:
     def future_tick(self, listener):
         self.future_tick_queue.add(listener)
 
-    def helper(self, signum):
-        signal.call
-
     def add_signal(self, signum, listener):
         self.signals.add(signum, listener)
         if self.signals.count(signum) == 1:
@@ -91,11 +87,11 @@ class SelectLoop:
             self.timers.tick()
             struct_timer_info = self.timers.get_first()
             if not self.running or not self.future_tick_queue.empty():
-                self.notify(self.select_stream(0))
+                self.notify(self.select_stream(timeout=0))
             elif struct_timer_info:
                 self.wait_for_timers(struct_timer_info)
             elif self.read_streams or self.write_streams:
-                self.notify(self.select_stream(None))
+                self.notify(self.select_stream(timeout=None))
             elif not self.signals.empty():
                 signal.pause()
             else:
@@ -105,10 +101,9 @@ class SelectLoop:
         scheduled_at, timer = struct_timer_info
         timeout = self.time_to_sleep(scheduled_at - self.timers.get_time())
         if self.read_streams or self.write_streams:
-            self.notify(self.select_stream(timeout))
+            self.notify(self.select_stream(timeout=timeout))
         else:
             time.sleep(timeout)
-
 
     def time_to_sleep(self, timeout):
         if timeout < 0:

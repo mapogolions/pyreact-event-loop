@@ -4,9 +4,6 @@ import unittest
 import unittest.mock
 
 from loop.select_loop import SelectLoop
-from loop.timer import Timers
-from loop.signal import Signals
-from loop.tick import FutureTickQueue
 
 
 class TestSelectLoop(unittest.TestCase):
@@ -171,7 +168,7 @@ class TestSelectLoop(unittest.TestCase):
     def test_write_stream_removes_itself(self):
         def remove_itself(stream):
             self.mock(len(self.loop.write_streams))
-            self.loop.remove_write_stream(self.wstream)
+            self.loop.remove_write_stream(stream)
             self.mock(len(self.loop.write_streams))
 
         self.loop.add_write_stream(self.wstream, remove_itself)
