@@ -24,24 +24,28 @@ class SelectLoop:
         self.signals = Signals()
 
     def add_read_stream(self, stream, listener):
-        if stream not in self.read_streams:
+        hash_value = hash(stream)
+        if hash_value not in self.read_listeners:
             self.read_streams.append(stream)
-            self.read_listeners[hash(stream)] = listener
+            self.read_listeners[hash_value] = listener
 
     def add_write_stream(self, stream, listener):
-        if stream not in self.write_streams:
+        hash_value = hash(stream)
+        if hash_value not in self.write_listeners:
             self.write_streams.append(stream)
-            self.write_listeners[hash(stream)] = listener
+            self.write_listeners[hash_value] = listener
 
     def remove_read_stream(self, stream):
-        if stream in self.read_streams:
+        hash_value = hash(stream)
+        if hash_value in self.read_listeners:
             self.read_streams.remove(stream)
-            del self.read_listeners[hash(stream)]
+            del self.read_listeners[hash_value]
 
     def remove_write_stream(self, stream):
-        if stream in self.write_streams:
+        hash_value = hash(stream)
+        if hash_value in self.write_listeners:
             self.write_streams.remove(stream)
-            del self.write_listeners[hash(stream)]
+            del self.write_listeners[hash_value]
 
     def add_timer(self, interval, callback):
         timer = Timer(interval, callback, periodic=False)
@@ -85,9 +89,7 @@ class SelectLoop:
         while self.running:
             self.future_tick_queue.tick()
             self.timers.tick()
-
             struct_timer_info = self.timers.get_first()
-
             if not self.running or not self.future_tick_queue.empty():
                 self.notify(self.select_stream(0))
             elif struct_timer_info:
@@ -100,7 +102,7 @@ class SelectLoop:
                 break
 
     def wait_for_timers(self, struct_timer_info):
-        (scheduled_at, timer) = struct_timer_info
+        scheduled_at, timer = struct_timer_info
         timeout = self.time_to_sleep(scheduled_at - self.timers.get_time())
         if self.read_streams or self.write_streams:
             self.notify(self.select_stream(timeout))
@@ -125,7 +127,7 @@ class SelectLoop:
     def notify(self, streams):
         if not streams:
             return
-        (ready_to_read, ready_to_write, _) = streams
+        ready_to_read, ready_to_write, _ = streams
         for stream in ready_to_read:
             listener = self.read_listeners[hash(stream)]
             listener(stream)

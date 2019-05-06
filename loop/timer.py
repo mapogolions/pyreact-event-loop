@@ -21,7 +21,7 @@ class Timers:
     def tick(self):
         timestamp = self.update_time()
         while self.schedule and self.schedule[0][0] < timestamp:
-            (_, tid, timer) = heapq.heappop(self.schedule)
+            _, tid, timer = heapq.heappop(self.schedule)
             if tid not in self.timers or timer is not self.timers[tid]:
                 continue
             timer = self.timers[tid]
@@ -61,7 +61,7 @@ class Timers:
     def get_first(self):
         if not self.schedule:
             return None
-        (scheduled_at, tid, _) = self.schedule[0]
+        scheduled_at, tid, _ = self.schedule[0]
         return (scheduled_at, self.timers[tid])
 
     def garbage_collect(self, tid):
@@ -69,8 +69,8 @@ class Timers:
             return False
         del self.timers[tid]
         for i in range(0, len(self.schedule)):
-            (_, code, _) = self.schedule[i]
-            if tid == code:
+            _, hash_value, _ = self.schedule[i]
+            if tid == hash_value:
                 self.schedule.pop(i)
                 heapq.heapify(self.schedule)
         return True
