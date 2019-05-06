@@ -7,7 +7,9 @@ from loop.tick import FutureTickQueue
 from loop.timer import Timer, Timers
 from loop.signal import Signals
 
+
 MICROSECONDS_PER_SECOND = 10 ** 6
+MAX_TIMEOUT = int(2 ** 63 / 10 ** 9)
 
 
 class SelectLoop:
@@ -24,22 +26,22 @@ class SelectLoop:
     def add_read_stream(self, stream, listener):
         if stream not in self.read_streams:
             self.read_streams.append(stream)
-            self.read_listeners[int(stream)] = listener
+            self.read_listeners[hash(stream)] = listener
 
     def add_write_stream(self, stream, listener):
         if stream not in self.write_streams:
             self.write_streams.append(stream)
-            self.write_listeners[int(stream)] = listener
+            self.write_listeners[hash(stream)] = listener
 
     def remove_read_stream(self, stream):
         if stream in self.read_streams:
             self.read_streams.remove(stream)
-            del self.read_listeners[int(stream)]
+            del self.read_listeners[hash(stream)]
 
     def remove_write_stream(self, stream):
         if stream in self.write_streams:
             self.write_streams.remove(stream)
-            del self.write_listeners[int(stream)]
+            del self.write_listeners[hash(stream)]
 
     def add_timer(self, interval, callback):
         timer = Timer(interval, callback, periodic=False)
@@ -78,8 +80,7 @@ class SelectLoop:
     def stop(self):
         self.running = False
 
-    # not complete !!!
-    def launch(self):
+    def run(self):
         self.running = True
         while self.running:
             self.future_tick_queue.tick()
@@ -90,9 +91,9 @@ class SelectLoop:
             """event_loop.add_timer(0.03, lambda: event_loop.future_tick(lambda: pass))"""
             """event_loop.future_tick( lambda: event_loop.stop() ) """
             if not self.running or not self.future_tick_queue.empty():
-                pass
+                self.notify(self.select_stream(0))
             elif struct_timer_info:
-                self.wait_for_timers_execution(struct_timer_info)
+                self.wait_for_timers(struct_timer_info)
             elif self.read_streams or self.write_streams:
                 self.notify(self.select_stream(None))
             elif not self.signals.empty():
@@ -100,32 +101,36 @@ class SelectLoop:
             else:
                 break
 
-    def wait_for_timers_execution(self, struct_timer_info):
+    def wait_for_timers(self, struct_timer_info):
         (scheduled_at, timer) = struct_timer_info
-        timeout = self.define_timeout(scheduled_at - self.timers.get_time())
+        timeout = self.time_to_sleep(scheduled_at - self.timers.get_time())
         if self.read_streams or self.write_streams:
             self.notify(self.select_stream(timeout))
         else:
             time.sleep(timeout)
 
 
-    def define_timeout(self, timeout):
+    def time_to_sleep(self, timeout):
         if timeout < 0:
             return 0
         timeout /= MICROSECONDS_PER_SECOND
-        return sys.maxsize if timeout > sys.maxsize else timeout
+        return MAX_TIMEOUT if timeout > MAX_TIMEOUT else timeout
 
-    def stream_select(self, timeout):
-        (rs, ws) = (self.read_streams, self.write_streams)
-        return select.select(rs, ws, [], timeout)
+    def select_stream(self, timeout):
+        return select.select(
+            self.read_streams,
+            self.write_streams,
+            [],
+            timeout
+        )
 
-    def nofity(self, streams):
-        if streams:
+    def notify(self, streams):
+        if not streams:
             return
-        (rs, ws, _) = streams
-        for stream in rs:
-            listener = self.read_listeners[int(stream)]
+        (ready_to_read, ready_to_write, _) = streams
+        for stream in ready_to_read:
+            listener = self.read_listeners[hash(stream)]
             listener(stream)
-        for stream in ws:
-            listener = self.write_streams[int(stream)]
+        for stream in ready_to_write:
+            listener = self.write_listeners[hash(stream)]
             listener(stream)
