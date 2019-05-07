@@ -24,28 +24,28 @@ class SelectLoop:
         self.pcntl_signals = []
 
     def add_read_stream(self, stream, listener):
-        hash_value = hash(stream)
-        if hash_value not in self.read_listeners:
+        key = hash(stream)
+        if key not in self.read_listeners:
             self.read_streams.append(stream)
-            self.read_listeners[hash_value] = listener
+            self.read_listeners[key] = listener
 
     def add_write_stream(self, stream, listener):
-        hash_value = hash(stream)
-        if hash_value not in self.write_listeners:
+        key = hash(stream)
+        if key not in self.write_listeners:
             self.write_streams.append(stream)
-            self.write_listeners[hash_value] = listener
+            self.write_listeners[key] = listener
 
     def remove_read_stream(self, stream):
-        hash_value = hash(stream)
-        if hash_value in self.read_listeners:
+        key = hash(stream)
+        if key in self.read_listeners:
             self.read_streams.remove(stream)
-            del self.read_listeners[hash_value]
+            del self.read_listeners[key]
 
     def remove_write_stream(self, stream):
-        hash_value = hash(stream)
-        if hash_value in self.write_listeners:
+        key = hash(stream)
+        if key in self.write_listeners:
             self.write_streams.remove(stream)
-            del self.write_listeners[hash_value]
+            del self.write_listeners[key]
 
     def add_timer(self, interval, callback):
         timer = Timer(interval, callback, periodic=False)

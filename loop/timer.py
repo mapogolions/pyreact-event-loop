@@ -69,8 +69,8 @@ class Timers:
             return False
         del self.timers[tid]
         for i in range(0, len(self.schedule)):
-            _, hash_value, _ = self.schedule[i]
-            if tid == hash_value:
+            _, key, _ = self.schedule[i]
+            if tid == key:
                 self.schedule.pop(i)
                 heapq.heapify(self.schedule)
         return True
