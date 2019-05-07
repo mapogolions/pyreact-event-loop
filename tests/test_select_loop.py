@@ -272,6 +272,31 @@ class TestSelectLoop(unittest.TestCase):
         self.loop.run()
         self.mock.assert_called_once()
 
+    def test_signals_arent_handled_without_the_running_loop(self):
+        self.loop.add_signal(signal.SIGUSR1, self.mock)
+        os.kill(os.getpid(), signal.SIGUSR1)
+        self.mock.assert_not_called()
+
+    def test_only_signals(self):
+
+        def cleanup():
+            self.mock(2)
+            self.loop.remove_signal(signal.SIGUSR1, listener)
+            self.loop.remove_signal(signal.SIGUSR2, cleanup)
+        listener = lambda: self.mock(1)
+        self.loop.add_signal(signal.SIGUSR1, listener)
+        self.loop.add_signal(signal.SIGUSR2, cleanup)
+        for signum in [signal.SIGUSR1, signal.SIGUSR1, signal.SIGUSR2]:
+            os.kill(os.getpid(), signum)
+        self.loop.run()
+
+        self.assertEqual(
+            [unittest.mock.call(1),
+             unittest.mock.call(1),
+             unittest.mock.call(2)],
+            self.mock.call_args_list
+        )
+
     def test_signals_keep_the_loop_running(self):
         self.loop.add_signal(signal.SIGUSR1, self.mock)
         self.loop.add_timer(
@@ -285,7 +310,6 @@ class TestSelectLoop(unittest.TestCase):
         self.loop.future_tick(lambda: self.loop.cancel_timer(timer))
 
         self.assert_run_faster_than(0.02)
-
 
     def create_socket_pair(self):
         rstream, wstream = socket.socketpair(

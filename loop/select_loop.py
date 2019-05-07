@@ -21,6 +21,7 @@ class SelectLoop:
         self.write_listeners = {}
         self.running = False
         self.signals = Signals()
+        self.pcntl_signals = []
 
     def add_read_stream(self, stream, listener):
         hash_value = hash(stream)
@@ -62,12 +63,17 @@ class SelectLoop:
     def future_tick(self, listener):
         self.future_tick_queue.add(listener)
 
+    def pcntl_signal_dispatch(self):
+        for signum in self.pcntl_signals:
+            self.signals.call(signum)
+        self.pcntl_signals = []
+
     def add_signal(self, signum, listener):
         self.signals.add(signum, listener)
         if self.signals.count(signum) == 1:
             signal.signal(
                 signum,
-                lambda *args: self.signals.call(args[0])
+                lambda *args: self.pcntl_signals.append(args[0])
             )
 
     def remove_signal(self, signum, listener):
@@ -85,6 +91,8 @@ class SelectLoop:
         while self.running:
             self.future_tick_queue.tick()
             self.timers.tick()
+            self.pcntl_signal_dispatch()
+
             struct_timer_info = self.timers.get_first()
             if not self.running or not self.future_tick_queue.empty():
                 self.notify(self.select_stream(timeout=0))
@@ -98,7 +106,7 @@ class SelectLoop:
                 break
 
     def wait_for_timers(self, struct_timer_info):
-        scheduled_at, timer = struct_timer_info
+        scheduled_at, _ = struct_timer_info
         timeout = self.time_to_sleep(scheduled_at - self.timers.get_time())
         if self.read_streams or self.write_streams:
             self.notify(self.select_stream(timeout=timeout))
