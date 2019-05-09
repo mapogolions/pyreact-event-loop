@@ -12,7 +12,6 @@ class LibuvLoop:
         self.timers = {}
         self.read_streams = {}
         self.write_streams = {}
-        self.stream_events = {}
         self.running = False
         self.signals = Signals()
         self.signal_events = {}
@@ -22,30 +21,26 @@ class LibuvLoop:
         if key not in self.read_streams:
             uv_poll = libuv.Poll(self.uv_loop, stream)
             uv_poll.start(libuv.UV_READABLE, lambda *args: listener(stream))
-            self.read_streams[key] = listener
-            self.stream_events[key] = uv_poll
+            self.read_streams[key] = uv_poll
 
     def add_write_stream(self, stream, listener):
         key = hash(stream)
         if key not in self.write_streams:
             uv_poll = libuv.Poll(self.uv_loop, stream)
             uv_poll.start(libuv.UV_WRITABLE, lambda *args: listener(stream))
-            self.write_streams[key] = listener
-            self.stream_events[key] = uv_poll
+            self.write_streams[key] = uv_poll
 
     def remove_read_stream(self, stream):
         key = hash(stream)
         if key in self.read_streams:
-            self.stream_events[key].stop()
+            self.read_streams[key].stop()
             del self.read_streams[key]
-            del self.stream_events[key]
 
     def remove_write_stream(self, stream):
         key = hash(stream)
         if key in self.write_streams:
-            self.stream_events[key].stop()
+            self.write_streams[key].stop()
             del self.write_streams[key]
-            del self.stream_events[key]
 
     def add_timer(self, interval, callback):
         timer = Timer(interval, callback, periodic=False)
