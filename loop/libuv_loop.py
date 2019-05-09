@@ -1,17 +1,18 @@
-import mood.event as libev
+import pyuv as libuv
 
 from loop.tick import FutureTickQueue
 from loop.signal import Signals
 from loop.timer import Timer
 
 
-class LibevLoop:
+class LibuvLoop:
     def __init__(self):
-        self.loop = libev.Loop()
+        self.uv_loop = libuv.Loop()
         self.future_tick_queue = FutureTickQueue()
         self.timers = {}
         self.read_streams = {}
         self.write_streams = {}
+        self.stream_events = {}
         self.running = False
         self.signals = Signals()
         self.signal_events = {}
@@ -19,60 +20,51 @@ class LibevLoop:
     def add_read_stream(self, stream, listener):
         key = hash(stream)
         if key not in self.read_streams:
-            ev_io = self.loop.io(
-                stream,
-                libev.EV_READ,
-                lambda *args: listener(stream)
-            )
-            ev_io.start()
-            self.read_streams[key] = ev_io
+            uv_poll = libuv.Poll(self.uv_loop, stream)
+            uv_poll.start(libuv.UV_READABLE, lambda *args: listener(stream))
+            self.read_streams[key] = listener
+            self.stream_events[key] = uv_poll
 
     def add_write_stream(self, stream, listener):
         key = hash(stream)
         if key not in self.write_streams:
-            ev_io = self.loop.io(
-                stream,
-                libev.EV_WRITE,
-                lambda *args: listener(stream)
-            )
-            ev_io.start()
-            self.write_streams[key] = ev_io
+            uv_poll = libuv.Poll(self.uv_loop, stream)
+            uv_poll.start(libuv.UV_WRITABLE, lambda *args: listener(stream))
+            self.write_streams[key] = listener
+            self.stream_events[key] = uv_poll
 
     def remove_read_stream(self, stream):
         key = hash(stream)
         if key in self.read_streams:
-            self.read_streams[key].stop()
+            self.stream_events[key].stop()
             del self.read_streams[key]
+            del self.stream_events[key]
 
     def remove_write_stream(self, stream):
         key = hash(stream)
         if key in self.write_streams:
-            self.write_streams[key].stop()
+            self.stream_events[key].stop()
             del self.write_streams[key]
+            del self.stream_events[key]
 
     def add_timer(self, interval, callback):
-        timer = Timer(interval, callback)
+        timer = Timer(interval, callback, periodic=False)
 
         def action(*args):
             nonlocal timer
             timer.callback()
             self.cancel_timer(timer)
 
-        ev_timer = self.loop.timer(timer.interval, 0.0, action)
-        ev_timer.start()
-        self.timers[hash(timer)] = ev_timer
+        uv_timer = libuv.Timer(self.uv_loop)
+        uv_timer.start(action, timer.interval, 0.0)
+        self.timers[hash(timer)] = uv_timer
         return timer
 
     def add_periodic_timer(self, interval, callback):
-        timer = Timer(interval, callback)
-        key = hash(timer)
-        ev_timer = self.loop.timer(
-            timer.interval,
-            timer.interval,
-            timer.callback
-        )
-        ev_timer.start()
-        self.timers[key] = ev_timer
+        timer = Timer(interval, callback, periodic=True)
+        uv_timer = libuv.Timer(self.uv_loop)
+        uv_timer.start(timer.callback, timer.interval, timer.interval)
+        self.timers[hash(timer)] = uv_timer
         return timer
 
     def cancel_timer(self, timer):
@@ -85,17 +77,17 @@ class LibevLoop:
         self.future_tick_queue.add(listener)
 
     def stop(self):
-        self.running = False
+        self.running = True
 
     def add_signal(self, signum, listener):
         self.signals.add(signum, listener)
         if signum not in self.signal_events:
-            ev_signal = self.loop.signal(
-                signum,
-                lambda *args: self.signals.call(signum)
+            uv_signal = libuv.Signal(self.uv_loop)
+            uv_signal.start(
+                lambda *args: self.signals.call(signum),
+                signum
             )
-            ev_signal.start()
-            self.signal_events[signum] = ev_signal
+            self.signal_events[signum] = uv_signal
 
     def remove_signal(self, signum, listener):
         if signum not in self.signal_events:
@@ -118,8 +110,8 @@ class LibevLoop:
                                   self.signals.empty())
 
             if was_just_stopped or has_pending_callbacks:
-                self.loop.start(libev.EVRUN_NOWAIT)
+                self.uv_loop.run(libuv.UV_RUN_NOWAIT)
             elif nothing_left_to_do:
                 break
             else:
-                self.loop.start(libev.EVRUN_ONCE)
+                self.uv_loop.run(libuv.UV_RUN_ONCE)
