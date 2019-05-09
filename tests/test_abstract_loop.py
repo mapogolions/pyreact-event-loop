@@ -9,8 +9,7 @@ class TestAbstractLoop(abc.ABC):
         self.assert_run_faster_than(0.02)
 
     def test_future_tick_handler_can_cancel_registered_stream(self):
-        mock = unittest.mock.Mock()
-        loop = self.create_event_loop()
+        mock, loop = unittest.mock.Mock(), self.create_event_loop()
         rstream, wstream = self.create_socket_pair()
         loop.add_write_stream(wstream, mock)
         loop.future_tick(
@@ -21,8 +20,7 @@ class TestAbstractLoop(abc.ABC):
         mock.assert_not_called()
 
     def test_add_write_stream_ignore_second_callable(self):
-        mock = unittest.mock.Mock()
-        loop = self.create_event_loop()
+        mock, loop = unittest.mock.Mock(), self.create_event_loop()
         rstream, wstream = self.create_socket_pair()
         loop.add_write_stream(wstream, lambda stream: mock(1))
         loop.add_write_stream(wstream, lambda stream: mock(2))
@@ -35,8 +33,7 @@ class TestAbstractLoop(abc.ABC):
         )
 
     def test_add_read_stream_ignore_second_callable(self):
-        mock = unittest.mock.Mock()
-        loop = self.create_event_loop()
+        mock, loop = unittest.mock.Mock(), self.create_event_loop()
         rstream, wstream = self.create_socket_pair()
         loop.add_read_stream(
             rstream,
@@ -54,8 +51,7 @@ class TestAbstractLoop(abc.ABC):
         )
 
     def test_add_write_stream(self):
-        mock = unittest.mock.Mock()
-        loop = self.create_event_loop()
+        mock, loop = unittest.mock.Mock(), self.create_event_loop()
         rstream, wstream = self.create_socket_pair()
         loop.add_write_stream(wstream, mock)
         self.next_tick(loop)
@@ -64,8 +60,7 @@ class TestAbstractLoop(abc.ABC):
         self.assertEqual(2, mock.call_count)
 
     def test_add_read_stream(self):
-        mock = unittest.mock.Mock()
-        loop = self.create_event_loop()
+        mock, loop = unittest.mock.Mock(), self.create_event_loop()
         rstream, wstream = self.create_socket_pair()
         loop.add_read_stream(rstream, mock)
         wstream.send(b"hello")
@@ -76,8 +71,7 @@ class TestAbstractLoop(abc.ABC):
         self.assertEqual(2, mock.call_count)
 
     def test_select_loop_timeout_emulation(self):
-        mock = unittest.mock.Mock()
-        loop = self.create_event_loop()
+        mock, loop = unittest.mock.Mock(), self.create_event_loop()
         loop.add_timer(0.05, mock)
         start = time.time()
         loop.run()
@@ -86,16 +80,14 @@ class TestAbstractLoop(abc.ABC):
         self.assertLessEqual(0.04, interval)
 
     def test_periodic_timer(self):
-        loop = self.create_event_loop()
-        mock = unittest.mock.Mock()
+        mock, loop = unittest.mock.Mock(), self.create_event_loop()
         timer = loop.add_periodic_timer(0.05, mock)
         loop.add_timer(0.12, lambda: loop.cancel_timer(timer))
         loop.run()
         self.assertEqual(2, mock.call_count)
 
     def test_remove_read_stream_instantly(self):
-        loop = self.create_event_loop()
-        mock = unittest.mock.Mock()
+        mock, loop = unittest.mock.Mock(), self.create_event_loop()
         rstream, wstream = self.create_socket_pair()
         loop.add_read_stream(rstream, mock)
         loop.remove_read_stream(rstream)
@@ -105,8 +97,7 @@ class TestAbstractLoop(abc.ABC):
         mock.assert_not_called()
 
     def test_remove_read_stream_after_reading(self):
-        loop = self.create_event_loop()
-        mock = unittest.mock.Mock()
+        mock, loop = unittest.mock.Mock(), self.create_event_loop()
         rstream, wstream = self.create_socket_pair()
         loop.add_read_stream(rstream, mock)
         wstream.send(b"foo")
@@ -118,8 +109,7 @@ class TestAbstractLoop(abc.ABC):
         mock.assert_called_once()
 
     def test_remove_write_stream_instantly(self):
-        loop = self.create_event_loop()
-        mock = unittest.mock.Mock()
+        mock, loop = unittest.mock.Mock(), self.create_event_loop()
         rstream, wstream = self.create_socket_pair()
         loop.add_write_stream(wstream, mock)
         loop.remove_write_stream(wstream)
@@ -128,8 +118,7 @@ class TestAbstractLoop(abc.ABC):
         mock.assert_not_called()
 
     def test_remove_write_stream_after_writing(self):
-        loop = self.create_event_loop()
-        mock = unittest.mock.Mock()
+        mock, loop = unittest.mock.Mock(), self.create_event_loop()
         rstream, wstream = self.create_socket_pair()
         loop.add_write_stream(wstream, mock)
         self.next_tick(loop)
@@ -139,8 +128,7 @@ class TestAbstractLoop(abc.ABC):
         mock.assert_called_once()
 
     def test_read_stream_removes_itself(self):
-        loop = self.create_event_loop()
-        mock = unittest.mock.Mock()
+        mock, loop = unittest.mock.Mock(), self.create_event_loop()
         rstream, wstream = self.create_socket_pair()
 
         def remove_itself(stream):
@@ -159,8 +147,7 @@ class TestAbstractLoop(abc.ABC):
         )
 
     def test_write_stream_removes_itself(self):
-        loop = self.create_event_loop()
-        mock = unittest.mock.Mock()
+        mock, loop = unittest.mock.Mock(), self.create_event_loop()
         rstream, wstream = self.create_socket_pair()
 
         def remove_itself(stream):
@@ -178,8 +165,7 @@ class TestAbstractLoop(abc.ABC):
         )
 
     def test_cleanup_before_mock_call(self):
-        loop = self.create_event_loop()
-        mock = unittest.mock.Mock()
+        mock, loop = unittest.mock.Mock(), self.create_event_loop()
         rstream, wstream = self.create_socket_pair()
 
         def cleanup(stream):
@@ -194,8 +180,7 @@ class TestAbstractLoop(abc.ABC):
         mock.assert_not_called()
 
     def test_call_of_the_close_sends_message_to_read_stream_implicitly(self):
-        mock = unittest.mock.Mock()
-        loop = self.create_event_loop()
+        mock, loop = unittest.mock.Mock(), self.create_event_loop()
         rstream, wstream = self.create_socket_pair()
         loop.add_read_stream(rstream, mock)
         wstream.close()
@@ -205,8 +190,7 @@ class TestAbstractLoop(abc.ABC):
 
 
     def test_read_streams_are_handled_earlier_than_write_streams(self):
-        mock = unittest.mock.Mock()
-        loop = self.create_event_loop()
+        mock, loop = unittest.mock.Mock(), self.create_event_loop()
         stream, another = self.create_socket_pair()
 
         def cleanup(stream):
@@ -227,15 +211,13 @@ class TestAbstractLoop(abc.ABC):
         )
 
     def test_future_tick_event_generated_by_future_tick(self):
-        loop = self.create_event_loop()
-        mock = unittest.mock.Mock()
+        mock, loop = unittest.mock.Mock(), self.create_event_loop()
         loop.future_tick(lambda *args: loop.future_tick(mock))
         loop.run()
         mock.assert_called_once()
 
     def test_future_tick_event_generated_by_timer(self):
-        loop = self.create_event_loop()
-        mock = unittest.mock.Mock()
+        mock, loop = unittest.mock.Mock(), self.create_event_loop()
         loop.add_timer(
             0.01,
             lambda *args: loop.future_tick(mock)
@@ -244,8 +226,7 @@ class TestAbstractLoop(abc.ABC):
         mock.assert_called_once()
 
     def test_future_tick(self):
-        mock = unittest.mock.Mock()
-        loop = self.create_event_loop()
+        mock, loop = unittest.mock.Mock(), self.create_event_loop()
         loop.future_tick(lambda: mock(1))
         loop.future_tick(lambda: mock(2))
         loop.run()
@@ -255,8 +236,7 @@ class TestAbstractLoop(abc.ABC):
         )
 
     def test_future_tick_fires_before_IO(self):
-        loop = self.create_event_loop()
-        mock = unittest.mock.Mock()
+        mock, loop = unittest.mock.Mock(), self.create_event_loop()
         stream, another = self.create_socket_pair()
         loop.add_write_stream(stream, lambda stream: mock("io"))
         loop.future_tick(lambda *args: mock("tick"))
@@ -268,8 +248,7 @@ class TestAbstractLoop(abc.ABC):
         )
 
     def test_future_tick_fires_before_timers(self):
-        loop = self.create_event_loop()
-        mock = unittest.mock.Mock()
+        mock, loop = unittest.mock.Mock(), self.create_event_loop()
         loop.add_timer(0, lambda *args: mock("timer 1"))
         loop.add_timer(0.03, lambda *args: mock("timer 2"))
         loop.add_timer(0, lambda *args: mock("timer 3"))
