@@ -5,6 +5,9 @@ from loop.signal import Signals
 from loop.timer import Timer
 
 
+SUB_MS_ACCURACY = 10e-4
+
+
 class LibuvLoop:
     def __init__(self):
         self.uv_loop = libuv.Loop()
@@ -19,14 +22,14 @@ class LibuvLoop:
     def add_read_stream(self, stream, listener):
         key = hash(stream)
         if key not in self.read_streams:
-            uv_poll = libuv.Poll(self.uv_loop, stream)
+            uv_poll = libuv.Poll(self.uv_loop, stream.fileno())
             uv_poll.start(libuv.UV_READABLE, lambda *args: listener(stream))
             self.read_streams[key] = uv_poll
 
     def add_write_stream(self, stream, listener):
         key = hash(stream)
         if key not in self.write_streams:
-            uv_poll = libuv.Poll(self.uv_loop, stream)
+            uv_poll = libuv.Poll(self.uv_loop, stream.fileno())
             uv_poll.start(libuv.UV_WRITABLE, lambda *args: listener(stream))
             self.write_streams[key] = uv_poll
 
@@ -43,7 +46,11 @@ class LibuvLoop:
             del self.write_streams[key]
 
     def add_timer(self, interval, callback):
-        timer = Timer(interval, callback, periodic=False)
+        timer = Timer(
+            interval if interval > SUB_MS_ACCURACY else SUB_MS_ACCURACY,
+            callback,
+            periodic=False
+        )
 
         def action(*args):
             nonlocal timer
@@ -56,7 +63,11 @@ class LibuvLoop:
         return timer
 
     def add_periodic_timer(self, interval, callback):
-        timer = Timer(interval, callback, periodic=True)
+        timer = Timer(
+            interval if interval > SUB_MS_ACCURACY else SUB_MS_ACCURACY,
+            callback,
+            periodic=True
+        )
         uv_timer = libuv.Timer(self.uv_loop)
         uv_timer.start(timer.callback, timer.interval, timer.interval)
         self.timers[hash(timer)] = uv_timer
@@ -72,7 +83,7 @@ class LibuvLoop:
         self.future_tick_queue.add(listener)
 
     def stop(self):
-        self.running = True
+        self.running = False
 
     def add_signal(self, signum, listener):
         self.signals.add(signum, listener)

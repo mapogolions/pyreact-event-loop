@@ -7,7 +7,7 @@ from loop.timer import Timer
 
 class LibevLoop:
     def __init__(self):
-        self.loop = libev.Loop()
+        self.ev_loop = libev.Loop()
         self.future_tick_queue = FutureTickQueue()
         self.timers = {}
         self.read_streams = {}
@@ -19,7 +19,7 @@ class LibevLoop:
     def add_read_stream(self, stream, listener):
         key = hash(stream)
         if key not in self.read_streams:
-            ev_io = self.loop.io(
+            ev_io = self.ev_loop.io(
                 stream,
                 libev.EV_READ,
                 lambda *args: listener(stream)
@@ -30,7 +30,7 @@ class LibevLoop:
     def add_write_stream(self, stream, listener):
         key = hash(stream)
         if key not in self.write_streams:
-            ev_io = self.loop.io(
+            ev_io = self.ev_loop.io(
                 stream,
                 libev.EV_WRITE,
                 lambda *args: listener(stream)
@@ -58,7 +58,7 @@ class LibevLoop:
             timer.callback()
             self.cancel_timer(timer)
 
-        ev_timer = self.loop.timer(timer.interval, 0.0, action)
+        ev_timer = self.ev_loop.timer(timer.interval, 0.0, action)
         ev_timer.start()
         self.timers[hash(timer)] = ev_timer
         return timer
@@ -66,7 +66,7 @@ class LibevLoop:
     def add_periodic_timer(self, interval, callback):
         timer = Timer(interval, callback)
         key = hash(timer)
-        ev_timer = self.loop.timer(
+        ev_timer = self.ev_loop.timer(
             timer.interval,
             timer.interval,
             timer.callback
@@ -90,7 +90,7 @@ class LibevLoop:
     def add_signal(self, signum, listener):
         self.signals.add(signum, listener)
         if signum not in self.signal_events:
-            ev_signal = self.loop.signal(
+            ev_signal = self.ev_loop.signal(
                 signum,
                 lambda *args: self.signals.call(signum)
             )
@@ -118,8 +118,8 @@ class LibevLoop:
                                   self.signals.empty())
 
             if was_just_stopped or has_pending_callbacks:
-                self.loop.start(libev.EVRUN_NOWAIT)
+                self.ev_loop.start(libev.EVRUN_NOWAIT)
             elif nothing_left_to_do:
                 break
             else:
-                self.loop.start(libev.EVRUN_ONCE)
+                self.ev_loop.start(libev.EVRUN_ONCE)

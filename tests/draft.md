@@ -1,3 +1,55 @@
+    # def test_BUG_operation_on_closed_socket_crash(self):
+    #     """All loops are crashed"""
+    #     mock = unittest.mock.Mock()
+    #     rstream, wstream = self.create_socket_pair()
+    #     loop = SelectLoop()
+    #     loop.add_read_stream(rstream, lambda stream: mock(1))
+    #     loop.add_write_stream(wstream, lambda stream:  mock(2))
+    #     wstream.close() # bug here
+    #     self.next_tick(loop)
+    #     self.close_sockets(rstream, wstream)
+    #     self.assertEqual(
+    #         [unittest.mock.call(1), unittest.mock.call(2)],
+    #         mock.call_args_list
+    #         )
+
+    # def test_read_earlier_than_write_on_different_sockets(self):
+    #     """libev: false Loop(libev.EVBACKEND_SELECT), libuv and select: true"""
+    #     mock = unittest.mock.Mock()
+    #     rstream, wstream = self.create_socket_pair()
+    #     loop = LibuvLoop()
+    #     loop.add_read_stream(rstream, lambda stream: mock(1))
+    #     loop.add_write_stream(wstream, lambda stream:  mock(2))
+    #     wstream.send(b"hello")
+    #     self.next_tick(loop)
+    #     self.close_sockets(rstream, wstream)
+    #     self.assertEqual(
+    #         [unittest.mock.call(1), unittest.mock.call(2)],
+    #         mock.call_args_list
+    #     )
+
+    def test_read_and_write_on_the_same_socket(self):
+        mock = unittest.mock.Mock()
+        rstream, wstream = self.create_socket_pair()
+        # loop = SelectLoop() true
+        # loop = LibevLoop() true
+        loop = LibuvLoop() # only call(2)
+        loop.add_read_stream(rstream, lambda stream: mock(1))
+        loop.add_write_stream(rstream, lambda stream: mock(2))
+        wstream.send(b"Hello")
+        self.next_tick(loop)
+        self.close_sockets(rstream, wstream)
+        self.assertEqual(
+            [unittest.mock.call(1), unittest.mock.call(2)],
+            mock.call_args_list
+        )
+
+
+
+
+
+
+
 
     # def test_signal(self):
     #     def cleanup():

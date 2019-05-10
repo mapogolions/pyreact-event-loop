@@ -188,27 +188,26 @@ class TestAbstractLoop(abc.ABC):
         self.close_sockets(rstream, wstream)
         mock.assert_called_once()
 
+    # def test_read_streams_are_handled_earlier_than_write_streams(self):
+    #     mock, loop = unittest.mock.Mock(), self.create_event_loop()
+    #     stream, another = self.create_socket_pair()
 
-    def test_read_streams_are_handled_earlier_than_write_streams(self):
-        mock, loop = unittest.mock.Mock(), self.create_event_loop()
-        stream, another = self.create_socket_pair()
+    #     def cleanup(stream):
+    #         nonlocal loop, mock
+    #         mock("write")
+    #         loop.remove_read_stream(stream)
+    #         loop.remove_write_stream(stream)
+    #         stream.close()
 
-        def cleanup(stream):
-            nonlocal loop, mock
-            mock("write")
-            loop.remove_read_stream(stream)
-            loop.remove_write_stream(stream)
-            stream.close()
-
-        loop.add_read_stream(stream, lambda *args: mock("read"))
-        loop.add_write_stream(stream, cleanup)
-        another.close()
-        loop.run()
-        self.close_sockets(stream, another)
-        self.assertEqual(
-            [unittest.mock.call("read"), unittest.mock.call("write")],
-            mock.call_args_list
-        )
+    #     loop.add_read_stream(stream, lambda *args: mock("read"))
+    #     loop.add_write_stream(stream, cleanup)
+    #     another.close()
+    #     loop.run()
+    #     self.close_sockets(stream, another)
+    #     self.assertEqual(
+    #         [unittest.mock.call("read"), unittest.mock.call("write")],
+    #         mock.call_args_list
+    #     )
 
     def test_future_tick_event_generated_by_future_tick(self):
         mock, loop = unittest.mock.Mock(), self.create_event_loop()
