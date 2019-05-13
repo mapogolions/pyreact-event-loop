@@ -24,12 +24,16 @@ class SelectLoop:
         self.pcntl_signals = {'queue': [], 'incomming': set()}
 
     def add_read_stream(self, stream, listener):
+        if stream.fileno() == -1:
+            raise ValueError
         key = hash(stream)
         if key not in self.read_listeners:
             self.read_streams.append(stream)
             self.read_listeners[key] = listener
 
     def add_write_stream(self, stream, listener):
+        if stream.fileno() == -1:
+            raise ValueError
         key = hash(stream)
         if key not in self.write_listeners:
             self.write_streams.append(stream)
