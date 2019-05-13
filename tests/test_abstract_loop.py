@@ -1,4 +1,5 @@
 import abc
+import io
 import socket
 import time
 import unittest
@@ -241,6 +242,91 @@ class TestAbstractLoop(abc.ABC):
              unittest.mock.call("timer 2")],
             mock.call_args_list
         )
+
+    @unittest.expectedFailure
+    def test_listening_to_closed_read_stream(self):
+        loop, mock = self.create_event_loop(), unittest.mock.Mock()
+        rstream, wstream = self.create_socket_pair()
+        self.close_sockets(rstream, wstream)
+        loop.add_read_stream(rstream, mock)
+
+    @unittest.expectedFailure
+    def test_listening_to_closed_write_stream(self):
+        loop, mock = self.create_event_loop(), unittest.mock.Mock()
+        rstream, wstream = self.create_socket_pair()
+        self.close_sockets(rstream, wstream)
+        loop.add_write_stream(wstream, mock)
+
+    def test_read_only_stream_is_listened_as_writable(self):
+        loop, mock = self.create_event_loop(), unittest.mock.Mock()
+        dual, another = self.create_socket_pair()
+
+        read_only = socket.SocketIO(dual, 'rb')
+        self.assertTrue(read_only.readable())
+        self.assertFalse(read_only.writable())
+
+        loop.add_write_stream(read_only, mock)
+        self.next_tick(loop)
+
+        mock.assert_called_once()
+        self.close_sockets(dual, another, read_only)
+
+    def test_write_only_strem_is_listened_as_readable(self):
+        loop, mock = self.create_event_loop(), unittest.mock.Mock()
+        dual, another = self.create_socket_pair()
+
+        write_only = socket.SocketIO(dual, 'wb')
+        self.assertFalse(write_only.readable())
+        self.assertTrue(write_only.writable())
+
+        loop.add_read_stream(write_only, mock)
+        another.send(b"foo")
+        self.next_tick(loop)
+
+        mock.assert_called_once()
+        self.close_sockets(dual, another, write_only)
+
+
+    def test_attempt_to_write_to_read_only_stream(self):
+        ctx, loop = self, self.create_event_loop()
+        dual, another = self.create_socket_pair()
+        read_only = socket.SocketIO(dual, 'rb')
+
+        def collapse(stream):
+            nonlocal ctx, dual, another, read_only
+            with ctx.assertRaises(io.UnsupportedOperation):
+                stream.write(b"bar")
+            ctx.close_sockets(dual, another, read_only)
+
+        loop.add_write_stream(read_only, collapse)
+        self.next_tick(loop)
+
+    def test_attempt_to_read_from_write_only_stream(self):
+        ctx, loop = self, self.create_event_loop()
+        dual, another = self.create_socket_pair()
+        write_only = socket.SocketIO(dual, 'wb')
+
+        def collapse(stream):
+            nonlocal ctx, dual, another, write_only
+            with ctx.assertRaises(io.UnsupportedOperation):
+                stream.read(10)
+            ctx.close_sockets(dual, another, write_only)
+
+        loop.add_read_stream(write_only, collapse)
+        another.send(b"bar")
+        self.next_tick(loop)
+
+    @abc.abstractmethod
+    def assertRaises(self, *args, **kwargs):
+        pass
+
+    @abc.abstractmethod
+    def assertFalse(self, *args, **kwargs):
+        pass
+
+    @abc.abstractmethod
+    def assertTrue(self, *args, **kwargs):
+        pass
 
     @abc.abstractmethod
     def assertEqual(self, *args, **kwargs):

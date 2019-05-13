@@ -14,34 +14,6 @@ def test_file_read_only(self):
         [unittest.mock.call('first line of the file' % os.linesep)],
         mock.call_args_list
     )
-
-@unittest.expectedFailure
-def test_listening_to_closed_read_only_stream(self):
-    loop, mock = self.create_event_loop(), unittest.mock.Mock()
-    fd = open(__file__, 'r')
-    fd.close()
-    loop.add_read_stream(fd, mock)
-
-@unittest.expectedFailure
-def test_listening_to_closed_write_only_stream(self):
-    loop, mock = self.create_event_loop(), unittest.mock.Mock()
-    fd = open(__file__, 'w')
-    fd.close()
-    loop.add_write_stream(fd, mock)
-
-@unittest.expectedFailure(???)
-def test_read_only_stream_as_write_only(self):
-    loop, mock = self.create_event_loop(), unittest.mock.Mock()
-    fd = open(__file__, 'r')
-    loop.add_write_stream(fd, mock)
-    ...
-
-@unittest.expectedFailure(???)
-def test_write_only_stream_as_read_only(self):
-    loop, mock = self.create_event_loop(), unittest.mock.Mock()
-    fd = open(__file__, 'w')
-    loop.add_read_stream(fd, mock)
-    ...
 ```
 
 
