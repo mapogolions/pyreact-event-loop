@@ -1,24 +1,4 @@
-### Streams
-
-
-```python
-unittest.skipIf(loop instanceof LibuvLoop)
-def test_file_read_only(self):
-    loop, mock = self.create_event_loop(), unittest.mock.Mock()
-    fd = open(__file__, 'r')
-    loop.add_read_stream(fd, lambda stream: mock(stream.readline()))
-    self.next_tick(loop)
-    fd.close()
-    mock.assert_called_once()
-    self.assertEqual(
-        [unittest.mock.call('first line of the file' % os.linesep)],
-        mock.call_args_list
-    )
-```
-
-
 ### Signals
-
 
 ```python
 def test_signal(self):
@@ -40,22 +20,7 @@ def test_signal(self):
         self.mock.call_args_list
     )
 
-def test_signal_multiple_usages_for_the_same_listener(self):
-    self.loop.add_timer(1, lambda: None)
-    self.loop.add_signal(signal.SIGUSR1, self.mock)
-    self.loop.add_signal(signal.SIGUSR1, self.mock)
-    self.loop.add_timer(0.4, lambda: os.kill(os.getpid(), signal.SIGUSR1))
-    self.loop.add_timer(
-        0.9,
-        lambda: self.loop.remove_signal(signal.SIGUSR1, self.mock)
-    )
-    self.loop.run()
-    self.mock.assert_called_once()
 
-def test_signals_arent_handled_without_the_running_loop(self):
-    self.loop.add_signal(signal.SIGUSR1, self.mock)
-    os.kill(os.getpid(), signal.SIGUSR1)
-    self.mock.assert_not_called()
 
 # BUG HERE!!!
 def test_only_signals(self):
@@ -133,27 +98,4 @@ def test_handle_only_unique_signals_per_tick(self):
         unittest.mock.call(2)],
         mock.call_args_list
     )
-
-def test_many_handler_per_signal(self):
-    mock1 = unittest.mock.Mock()
-    mock2 = unittest.mock.Mock()
-    self.loop.add_signal(signal.SIGUSR1, mock1)
-    self.loop.add_signal(signal.SIGUSR1, mock2)
-    os.kill(os.getpid(), signal.SIGUSR1)
-    self.next_tick()
-    mock1.assert_called_once()
-    mock2.assert_called_once()
-
-def test_signals_keep_the_loop_running(self):
-    self.loop.add_signal(signal.SIGUSR1, self.mock)
-    self.loop.add_timer(
-        0.2,
-        lambda: self.loop.remove_signal(signal.SIGUSR1, self.mock)
-    )
-    self.assert_run_faster_than(0.3)
-
-def test_timer_inteval_can_be_far_in_future(self):
-    timer = self.loop.add_timer(10 ** 6, self.mock)
-    self.loop.future_tick(lambda: self.loop.cancel_timer(timer))
-    self.assert_run_faster_than(0.02)
 ```

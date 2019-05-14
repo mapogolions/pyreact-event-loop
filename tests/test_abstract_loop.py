@@ -1,5 +1,7 @@
 import abc
 import io
+import os
+import signal
 import socket
 import time
 import unittest
@@ -243,19 +245,19 @@ class TestAbstractLoop(abc.ABC):
             mock.call_args_list
         )
 
-    @unittest.expectedFailure
     def test_listening_to_closed_read_stream(self):
         loop, mock = self.create_event_loop(), unittest.mock.Mock()
         rstream, wstream = self.create_socket_pair()
         self.close_sockets(rstream, wstream)
-        loop.add_read_stream(rstream, mock)
+        with self.assertRaises(Exception):
+            loop.add_read_stream(rstream, mock)
 
-    @unittest.expectedFailure
     def test_listening_to_closed_write_stream(self):
         loop, mock = self.create_event_loop(), unittest.mock.Mock()
         rstream, wstream = self.create_socket_pair()
         self.close_sockets(rstream, wstream)
-        loop.add_write_stream(wstream, mock)
+        with self.assertRaises(Exception):
+            loop.add_write_stream(wstream, mock)
 
     def test_read_only_stream_is_listened_as_writable(self):
         loop, mock = self.create_event_loop(), unittest.mock.Mock()
@@ -286,35 +288,81 @@ class TestAbstractLoop(abc.ABC):
         mock.assert_called_once()
         self.close_sockets(dual, another, write_only)
 
-
-    def test_attempt_to_write_to_read_only_stream(self):
-        ctx, loop = self, self.create_event_loop()
+    def test_attempt_to_write_to_the_read_only_stream(self):
+        loop, mock = self.create_event_loop(), unittest.mock.Mock()
         dual, another = self.create_socket_pair()
         read_only = socket.SocketIO(dual, 'rb')
 
         def collapse(stream):
-            nonlocal ctx, dual, another, read_only
-            with ctx.assertRaises(io.UnsupportedOperation):
-                stream.write(b"bar")
-            ctx.close_sockets(dual, another, read_only)
+            nonlocal mock
+            try:
+                mock()
+                stream.write(b"foo")
+                mock()
+            except io.UnsupportedOperation:
+                pass
 
         loop.add_write_stream(read_only, collapse)
         self.next_tick(loop)
+        self.close_sockets(dual, another, read_only)
+        mock.assert_called_once()
 
-    def test_attempt_to_read_from_write_only_stream(self):
-        ctx, loop = self, self.create_event_loop()
+    def test_attempt_to_read_from_the_write_only_stream(self):
+        loop, mock = self.create_event_loop(), unittest.mock.Mock()
         dual, another = self.create_socket_pair()
         write_only = socket.SocketIO(dual, 'wb')
 
         def collapse(stream):
-            nonlocal ctx, dual, another, write_only
-            with ctx.assertRaises(io.UnsupportedOperation):
+            nonlocal mock
+            try:
+                mock()
                 stream.read(10)
-            ctx.close_sockets(dual, another, write_only)
+                mock()
+            except io.UnsupportedOperation:
+                pass
 
         loop.add_read_stream(write_only, collapse)
         another.send(b"bar")
         self.next_tick(loop)
+        self.close_sockets(dual, another, write_only)
+        mock.assert_called_once()
+
+    def test_signals_are_not_handled_without_the_running_loop(self):
+        loop, mock = self.create_event_loop(), unittest.mock.Mock()
+        loop.add_signal(signal.SIGUSR1, mock)
+        os.kill(os.getpid(), signal.SIGUSR1)
+        mock.assert_not_called()
+
+    def test_timer_inteval_can_be_far_in_future(self):
+        loop, mock = self.create_event_loop(), unittest.mock.Mock()
+        timer = loop.add_timer(10 ** 6, mock)
+        loop.future_tick(lambda: loop.cancel_timer(timer))
+        self.assert_run_faster_than(0.02)
+
+    def test_signal_multiple_usages_for_the_same_listener(self):
+        loop, mock = self.create_event_loop(), unittest.mock.Mock()
+        loop.add_signal(signal.SIGUSR1, mock)
+        loop.add_signal(signal.SIGUSR1, mock)
+        loop.add_timer(
+            0.05,
+            lambda: os.kill(os.getpid(), signal.SIGUSR1)
+        )
+        loop.add_timer(
+            0.1,
+            lambda: loop.remove_signal(signal.SIGUSR1, mock)
+        )
+        loop.run()
+        mock.assert_called_once()
+
+    def test_many_handlers_per_signal(self):
+        loop = self.create_event_loop()
+        mock1, mock2 = unittest.mock.Mock(), unittest.mock.Mock()
+        loop.add_signal(signal.SIGUSR2, mock1)
+        loop.add_signal(signal.SIGUSR2, mock2)
+        os.kill(os.getpid(), signal.SIGUSR2)
+        self.next_tick(loop)
+        mock1.assert_called_once()
+        mock2.assert_called_once()
 
     @abc.abstractmethod
     def assertRaises(self, *args, **kwargs):
