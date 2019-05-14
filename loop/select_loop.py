@@ -99,20 +99,25 @@ class SelectLoop:
             self.timers.tick()
             self.pcntl_signal_dispatch()
 
-            struct_timer_info = self.timers.get_first()
-            if not self.running or not self.future_tick_queue.empty():
+            has_pending_callbacks = not self.future_tick_queue.empty()
+            was_just_stopped = not self.running
+            has_pending_timer = self.timers.get_first()
+            has_pending_io = self.read_streams or self.write_streams
+            has_pending_signals = not self.signals.empty()
+
+            if was_just_stopped or has_pending_callbacks:
                 self.notify(self.select_stream(timeout=0))
-            elif struct_timer_info:
-                self.wait_for_timers(struct_timer_info)
-            elif self.read_streams or self.write_streams:
+            elif has_pending_timer:
+                self.wait_for_timers(has_pending_timer)
+            elif has_pending_io:
                 self.notify(self.select_stream(timeout=None))
-            elif not self.signals.empty():
+            elif has_pending_signals:
                 signal.pause()
             else:
                 break
 
-    def wait_for_timers(self, struct_timer_info):
-        scheduled_at, _ = struct_timer_info
+    def wait_for_timers(self, pending_timer):
+        scheduled_at, _ = pending_timer
         timeout = self.time_to_sleep(scheduled_at - self.timers.get_time())
         if self.read_streams or self.write_streams:
             self.notify(self.select_stream(timeout=timeout))
