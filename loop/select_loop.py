@@ -21,7 +21,7 @@ class SelectLoop:
         self.write_listeners = {}
         self.running = False
         self.signals = Signals()
-        self.pcntl_signals = {'queue': [], 'incomming': set()}
+        self.pcntl_signals = []
 
     def add_read_stream(self, stream, listener):
         if stream.fileno() == -1:
@@ -68,19 +68,17 @@ class SelectLoop:
         self.future_tick_queue.add(listener)
 
     def pcntl_signal_dispatch(self):
-        for signum in self.pcntl_signals['queue']:
+        for signum in self.pcntl_signals:
             self.signals.call(signum)
-        self.pcntl_signals = {'queue': [], 'incomming': set()}
-
-    def unique_signals_per_tick(self, *args):
-        if args[0] not in self.pcntl_signals['incomming']:
-            self.pcntl_signals['incomming'].add(args[0])
-            self.pcntl_signals['queue'].append(args[0])
+        self.pcntl_signals = []
 
     def add_signal(self, signum, listener):
         self.signals.add(signum, listener)
         if self.signals.count(signum) == 1:
-            signal.signal(signum, self.unique_signals_per_tick)
+            signal.signal(
+                signum,
+                lambda *args: self.pcntl_signals.append(signum)
+            )
 
     def remove_signal(self, signum, listener):
         if not self.signals.count(signum):

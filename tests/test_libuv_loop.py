@@ -22,7 +22,7 @@ class TestLibuvLoop(unittest.TestCase, TestAbstractLoop):
             mock.call_args_list
         )
 
-    def test_read_and_write_on_the_same_socket_rejected(self):
+    def test_read_and_write_on_the_same_socket(self):
         loop, mock = self.create_event_loop(), unittest.mock.Mock()
         the_same, another = self.create_socket_pair()
         loop.add_read_stream(the_same, lambda stream: mock("read"))

@@ -5,11 +5,10 @@ from tests.test_abstract_loop import TestAbstractLoop
 
 
 class TestSelectLoop(unittest.TestCase, TestAbstractLoop):
-    @staticmethod
-    def create_event_loop():
+    def create_event_loop(self):
         return SelectLoop()
 
-    def test_read_earlier_than_write_on_different_sockets(self):
+    def test_read_io_fires_before_write_io_on_different_sockets(self):
         loop, mock = self.create_event_loop(), unittest.mock.Mock()
         rstream, wstream = self.create_socket_pair()
         loop.add_read_stream(rstream, lambda stream: mock("read"))
@@ -22,7 +21,7 @@ class TestSelectLoop(unittest.TestCase, TestAbstractLoop):
             mock.call_args_list
         )
 
-    def test_read_and_write_on_the_same_socket(self):
+    def test_read_io_and_write_io_on_the_same_socket(self):
         loop, mock = self.create_event_loop(), unittest.mock.Mock()
         the_same, another = self.create_socket_pair()
         loop.add_read_stream(the_same, lambda stream: mock("read"))
