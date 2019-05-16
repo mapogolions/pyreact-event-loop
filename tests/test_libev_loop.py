@@ -1,36 +1,30 @@
+import pytest
 import unittest
 
-from loop.libev_loop import LibevLoop
-from tests.test_abstract_loop import TestAbstractLoop
+import loop.libev_loop as libev_loop
+from tests.loop_test_case import *
+import tests.testkit as testkit
 
 
-class TestLibevLoop(unittest.TestCase, TestAbstractLoop):
-    @staticmethod
-    def create_event_loop():
-        return LibevLoop()
+@pytest.fixture
+def loop():
+    return libev_loop.LibevLoop()
 
-    def test_write_earlier_than_read_on_different_sockets(self):
-        loop, mock = self.create_event_loop(), unittest.mock.Mock()
-        rstream, wstream = self.create_socket_pair()
-        loop.add_read_stream(rstream, lambda stream: mock("read"))
-        loop.add_write_stream(wstream, lambda stream: mock("write"))
-        wstream.send(b"bar")
-        self.next_tick(loop)
-        self.close_sockets(rstream, wstream)
-        self.assertEqual(
-            [unittest.mock.call("write"), unittest.mock.call("read")],
-            mock.call_args_list
-        )
 
-    def test_read_and_write_on_the_same_socket(self):
-        loop, mock = self.create_event_loop(), unittest.mock.Mock()
-        the_same, another = self.create_socket_pair()
-        loop.add_read_stream(the_same, lambda stream: mock("read"))
-        loop.add_write_stream(the_same, lambda stream: mock("write"))
-        another.send(b"bar")
-        self.next_tick(loop)
-        self.close_sockets(the_same, another)
-        self.assertEqual(
-            [unittest.mock.call("read"), unittest.mock.call("write")],
-            mock.call_args_list
-        )
+def test_read_io_fires_before_write_io_on_different_sockets(loop, mock, socket_pair):
+    loop.add_read_stream(socket_pair[0], lambda stream: mock("read"))
+    loop.add_write_stream(socket_pair[1], lambda stream: mock("write"))
+    socket_pair[1].send(b"bar")
+    testkit.next_tick(loop)
+    expected = [unittest.mock.call("write"), unittest.mock.call("read")]
+    assert mock.call_args_list == expected
+
+
+def test_read_io_and_write_io_on_the_same_socket(loop, mock, socket_pair):
+    the_same, another = socket_pair
+    loop.add_read_stream(the_same, lambda stream: mock("read"))
+    loop.add_write_stream(the_same, lambda stream: mock("write"))
+    another.send(b"bar")
+    testkit.next_tick(loop)
+    expected = [unittest.mock.call("read"), unittest.mock.call("write")]
+    assert mock.call_args_list == expected
