@@ -1,12 +1,12 @@
 import pytest
 import unittest
 
-import loop.tick as tick
+import event_loop.tick
 
 
 @pytest.fixture
 def future_tick_queue():
-    return tick.FutureTickQueue()
+    return event_loop.tick.FutureTickQueue()
 
 
 def test_tick_queue_is_empty(future_tick_queue):

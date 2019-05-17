@@ -1,8 +1,8 @@
 import pyuv as libuv
 
-from loop.tick import FutureTickQueue
-from loop.signal import Signals
-from loop.timer import Timer
+import event_loop.tick
+import event_loop.signal
+import event_loop.timer
 
 
 SUB_MS_ACCURACY = 10e-4
@@ -11,12 +11,12 @@ SUB_MS_ACCURACY = 10e-4
 class LibuvLoop:
     def __init__(self):
         self.uv_loop = libuv.Loop()
-        self.future_tick_queue = FutureTickQueue()
+        self.future_tick_queue = event_loop.tick.FutureTickQueue()
         self.timers = {}
         self.read_streams = {}
         self.write_streams = {}
         self.running = False
-        self.signals = Signals()
+        self.signals = event_loop.signal.Signals()
         self.signal_events = {}
 
     def add_read_stream(self, stream, listener):
@@ -46,7 +46,7 @@ class LibuvLoop:
             del self.write_streams[key]
 
     def add_timer(self, interval, callback):
-        timer = Timer(
+        timer = event_loop.timer.Timer(
             interval if interval > SUB_MS_ACCURACY else SUB_MS_ACCURACY,
             callback,
             periodic=False
@@ -63,7 +63,7 @@ class LibuvLoop:
         return timer
 
     def add_periodic_timer(self, interval, callback):
-        timer = Timer(
+        timer = event_loop.timer.Timer(
             interval if interval > SUB_MS_ACCURACY else SUB_MS_ACCURACY,
             callback,
             periodic=True

@@ -1,14 +1,14 @@
 import pytest
 import unittest
 
-import loop.libuv_loop as libuv_loop
-from tests.loop_test_case import *
+import event_loop
 import tests.testkit as testkit
+from tests.loop_test_case import *
 
 
 @pytest.fixture
 def loop():
-    return libuv_loop.LibuvLoop()
+    return event_loop.LibuvLoop()
 
 
 def test_read_io_fires_before_write_io_on_different_sockets(loop, mock, socket_pair):

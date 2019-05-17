@@ -2,9 +2,9 @@ import select
 import signal
 import time
 
-from loop.tick import FutureTickQueue
-from loop.timer import Timer, Timers
-from loop.signal import Signals
+import event_loop.tick
+import event_loop.timer
+import event_loop.signal
 
 
 MICROSECONDS_PER_SECOND = 10 ** 6
@@ -13,14 +13,14 @@ MAX_TIMEOUT = int(2 ** 63 / 10 ** 9)
 
 class SelectLoop:
     def __init__(self):
-        self.future_tick_queue = FutureTickQueue()
-        self.timers = Timers()
+        self.future_tick_queue = event_loop.tick.FutureTickQueue()
+        self.timers = event_loop.timer.Timers()
         self.read_streams = []
         self.read_listeners = {}
         self.write_streams = []
         self.write_listeners = {}
         self.running = False
-        self.signals = Signals()
+        self.signals = event_loop.signal.Signals()
         self.pcntl_signals = []
 
     def add_read_stream(self, stream, listener):
@@ -52,12 +52,12 @@ class SelectLoop:
             del self.write_listeners[key]
 
     def add_timer(self, interval, callback):
-        timer = Timer(interval, callback, periodic=False)
+        timer = event_loop.timer.Timer(interval, callback, periodic=False)
         self.timers.add(timer)
         return timer
 
     def add_periodic_timer(self, interval, callback):
-        timer = Timer(interval, callback, periodic=True)
+        timer = event_loop.timer.Timer(interval, callback, periodic=True)
         self.timers.add(timer)
         return timer
 

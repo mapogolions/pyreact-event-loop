@@ -1,19 +1,19 @@
 import mood.event as libev
 
-from loop.tick import FutureTickQueue
-from loop.signal import Signals
-from loop.timer import Timer
+import event_loop.tick
+import event_loop.signal
+import event_loop.timer
 
 
 class LibevLoop:
     def __init__(self):
         self.ev_loop = libev.Loop()
-        self.future_tick_queue = FutureTickQueue()
+        self.future_tick_queue = event_loop.tick.FutureTickQueue()
         self.timers = {}
         self.read_streams = {}
         self.write_streams = {}
         self.running = False
-        self.signals = Signals()
+        self.signals = event_loop.signal.Signals()
         self.signal_events = {}
 
     def add_read_stream(self, stream, listener):
@@ -51,7 +51,7 @@ class LibevLoop:
             del self.write_streams[key]
 
     def add_timer(self, interval, callback):
-        timer = Timer(interval, callback)
+        timer = event_loop.timer.Timer(interval, callback)
 
         def action(*args):
             nonlocal timer
@@ -64,7 +64,7 @@ class LibevLoop:
         return timer
 
     def add_periodic_timer(self, interval, callback):
-        timer = Timer(interval, callback)
+        timer = event_loop.timer.Timer(interval, callback)
         key = hash(timer)
         ev_timer = self.ev_loop.timer(
             timer.interval,

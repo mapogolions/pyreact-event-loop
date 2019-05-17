@@ -2,12 +2,12 @@ import pytest
 import signal
 import unittest
 
-import loop.signal as custom_signals
+import event_loop.signal
 
 
 @pytest.fixture
 def signals():
-    return custom_signals.Signals()
+    return event_loop.signal.Signals()
 
 
 def test_empty(signals):
