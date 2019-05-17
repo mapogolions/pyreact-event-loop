@@ -208,7 +208,7 @@ def test_read_only_stream_is_listened_as_writable(loop, mock, socket_pair):
     mock.assert_called_once()
 
 
-def test_write_only_strem_is_listened_as_readable(loop, mock, socket_pair):
+def test_write_only_stream_is_listened_as_readable(loop, mock, socket_pair):
     write_only = socket.SocketIO(socket_pair[0], 'wb')
     assert not write_only.readable()
     assert write_only.writable()
@@ -218,32 +218,28 @@ def test_write_only_strem_is_listened_as_readable(loop, mock, socket_pair):
     mock.assert_called_once()
 
 
-def test_attempt_to_write_to_the_read_only_stream(loop, mock, socket_pair):
+def test_write_to_the_read_only_stream(loop, mock, socket_pair):
     read_only = socket.SocketIO(socket_pair[0], 'rb')
 
     def collapse(stream):
         try:
-            mock()
             stream.write(b"foo")
-            mock()
         except io.UnsupportedOperation:
-            pass
+            mock()
 
     loop.add_write_stream(read_only, collapse)
     testkit.next_tick(loop)
     mock.assert_called_once()
 
 
-def test_attempt_to_read_from_the_write_only_stream(loop, mock, socket_pair):
+def test_read_from_the_write_only_stream(loop, mock, socket_pair):
     write_only = socket.SocketIO(socket_pair[0], 'wb')
 
     def collapse(stream):
         try:
-            mock()
             stream.read(10)
-            mock()
         except io.UnsupportedOperation:
-            pass
+            mock()
 
     loop.add_read_stream(write_only, collapse)
     socket_pair[1].send(b"bar")
