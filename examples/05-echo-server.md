@@ -11,10 +11,12 @@ def process_incoming_connection(stream):
 
 def read(stream):
     data = stream.recv(2**16)
-    if not data or data.startswith(b'quit'):
+    print(data)
+    if not data or data in [b'quit\r\n', b'\r\n']:
         stream.close()
         loop.remove_read_stream(stream)
     else:
+        loop.remove_read_stream(stream)
         loop.add_write_stream(stream, echo(data))
 
 
@@ -22,6 +24,7 @@ def echo(data):
     def f(stream):
         stream.send(data)
         loop.remove_write_stream(stream)
+        loop.add_read_stream(stream, read)
     return f
 
 
