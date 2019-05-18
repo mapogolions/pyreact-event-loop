@@ -1,7 +1,6 @@
 ```python
 import os
 import signal
-
 import event_loop
 
 
