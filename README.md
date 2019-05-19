@@ -9,6 +9,14 @@ There are three available implementations:
 * `LibevLoop` uses the [`mood.event`](https://github.com/lekma/mood.event) python `libev` interface
 * `LibuvLoop` uses the [`pyuv`](https://github.com/saghul/pyuv) python interface for `libuv`
 
+### Examples
+
+* [timers](./examples/01-timers.md)
+* [periodic timers](./examples/02-periodic.md)
+* [ticks](./examples/03-ticks.md)
+* [signals](./examples/04-signals.md)
+* [echo server](./examples/05-echo-server.md)
+* [fp streams](./examples/06-fp-streams.md)
 
 ### How to use
 
