@@ -105,6 +105,10 @@ class LibevLoop:
             self.signal_events[signum].stop()
             del self.signal_events[signum]
 
+    def next_tick(self):
+        self.future_tick(lambda *args: self.stop())
+        self.run()
+
     def run(self):
         self.running = True
         while self.running:

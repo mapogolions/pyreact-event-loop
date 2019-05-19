@@ -90,6 +90,10 @@ class SelectLoop:
     def stop(self):
         self.running = False
 
+    def next_tick(self):
+        self.future_tick(lambda *args: self.stop())
+        self.run()
+
     def run(self):
         self.running = True
         while self.running:

@@ -23,7 +23,7 @@ def test_future_tick_handler_can_cancel_registered_stream(loop, mock, socket_pai
 def test_add_write_stream_ignore_second_callable(loop, mock, socket_pair):
     loop.add_write_stream(socket_pair[1], lambda stream: mock(1))
     loop.add_write_stream(socket_pair[1], lambda stream: mock(2))
-    testkit.next_tick(loop)
+    loop.next_tick()
     assert mock.call_args_list == [unittest.mock.call(1)]
 
 
@@ -31,26 +31,26 @@ def test_add_read_stream_ignore_second_callable(loop, mock, socket_pair):
     loop.add_read_stream(socket_pair[0], lambda stream: mock(stream.recv(20)))
     loop.add_read_stream(socket_pair[0], lambda stream: mock(2))
     socket_pair[1].send(b"foo")
-    testkit.next_tick(loop)
+    loop.next_tick()
     socket_pair[1].send(b"bar")
-    testkit.next_tick(loop)
+    loop.next_tick()
     expected = [unittest.mock.call(b"foo"), unittest.mock.call(b"bar")]
     assert mock.call_args_list == expected
 
 
 def test_add_write_stream(loop, mock, socket_pair):
     loop.add_write_stream(socket_pair[1], mock)
-    testkit.next_tick(loop)
-    testkit.next_tick(loop)
+    loop.next_tick()
+    loop.next_tick()
     assert mock.call_count == 2
 
 
 def test_add_read_stream(loop, mock, socket_pair):
     loop.add_read_stream(socket_pair[0], mock)
     socket_pair[1].send(b"hello")
-    testkit.next_tick(loop)
+    loop.next_tick()
     socket_pair[1].send(b"world")
-    testkit.next_tick(loop)
+    loop.next_tick()
     assert mock.call_count == 2
 
 
@@ -74,32 +74,32 @@ def test_remove_read_stream_instantly(loop, mock, socket_pair):
     loop.add_read_stream(socket_pair[0], mock)
     loop.remove_read_stream(socket_pair[0])
     socket_pair[1].send(b"bar")
-    testkit.next_tick(loop)
+    loop.next_tick()
     mock.assert_not_called()
 
 
 def test_remove_write_stream_instantly(loop, mock, socket_pair):
     loop.add_write_stream(socket_pair[1], mock)
     loop.remove_write_stream(socket_pair[1])
-    testkit.next_tick(loop)
+    loop.next_tick()
     mock.assert_not_called()
 
 
 def test_remove_read_stream_after_reading(loop, mock, socket_pair):
     loop.add_read_stream(socket_pair[0], mock)
     socket_pair[1].send(b"foo")
-    testkit.next_tick(loop)
+    loop.next_tick()
     loop.remove_read_stream(socket_pair[0])
     socket_pair[1].send(b"bar")
-    testkit.next_tick(loop)
+    loop.next_tick()
     mock.assert_called_once()
 
 
 def test_remove_write_stream_after_writing(loop, mock, socket_pair):
     loop.add_write_stream(socket_pair[1], mock)
-    testkit.next_tick(loop)
+    loop.next_tick()
     loop.remove_write_stream(socket_pair[1])
-    testkit.next_tick(loop)
+    loop.next_tick()
     mock.assert_called_once()
 
 
@@ -141,7 +141,7 @@ def test_cleanup_before_mock_call(loop, mock, socket_pair):
 def test_sends_message_to_the_read_stream_implicitly(loop, mock, socket_pair):
     loop.add_read_stream(socket_pair[0], mock)
     socket_pair[1].close()
-    testkit.next_tick(loop)
+    loop.next_tick()
     mock.assert_called_once()
 
 
@@ -167,7 +167,7 @@ def test_future_tick(loop, mock):
 def test_future_tick_fires_before_IO(loop, mock, socket_pair):
     loop.add_write_stream(socket_pair[1], lambda stream: mock("io"))
     loop.future_tick(lambda: mock("tick"))
-    testkit.next_tick(loop)
+    loop.next_tick()
     expected = [unittest.mock.call("tick"), unittest.mock.call("io")]
     assert mock.call_args_list == expected
 
@@ -204,7 +204,7 @@ def test_read_only_stream_is_listened_as_writable(loop, mock, socket_pair):
     assert read_only.readable()
     assert not read_only.writable()
     loop.add_write_stream(read_only, mock)
-    testkit.next_tick(loop)
+    loop.next_tick()
     mock.assert_called_once()
 
 
@@ -214,7 +214,7 @@ def test_write_only_stream_is_listened_as_readable(loop, mock, socket_pair):
     assert write_only.writable()
     loop.add_read_stream(write_only, mock)
     socket_pair[1].send(b"foo")
-    testkit.next_tick(loop)
+    loop.next_tick()
     mock.assert_called_once()
 
 
@@ -228,7 +228,7 @@ def test_write_to_the_read_only_stream(loop, mock, socket_pair):
             mock()
 
     loop.add_write_stream(read_only, collapse)
-    testkit.next_tick(loop)
+    loop.next_tick()
     mock.assert_called_once()
 
 
@@ -243,7 +243,7 @@ def test_read_from_the_write_only_stream(loop, mock, socket_pair):
 
     loop.add_read_stream(write_only, collapse)
     socket_pair[1].send(b"bar")
-    testkit.next_tick(loop)
+    loop.next_tick()
     mock.assert_called_once()
 
 
@@ -263,7 +263,7 @@ def test_many_handlers_per_signal(loop, mock):
     loop.add_signal(signal.SIGUSR2, lambda *args: mock())
     loop.add_signal(signal.SIGUSR2, lambda *args: mock())
     os.kill(os.getpid(), signal.SIGUSR2)
-    testkit.next_tick(loop)
+    loop.next_tick()
     assert mock.call_count == 2
 
 
@@ -271,5 +271,5 @@ def test_signal_multiple_usages_for_the_same_listener(loop, mock):
     loop.add_signal(signal.SIGHUP, mock)
     loop.add_signal(signal.SIGHUP, mock)
     os.kill(os.getpid(), signal.SIGHUP)
-    testkit.next_tick(loop)
+    loop.next_tick()
     mock.assert_called_once()

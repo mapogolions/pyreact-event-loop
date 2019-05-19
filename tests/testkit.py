@@ -2,11 +2,6 @@ import socket
 import time
 
 
-def next_tick(loop):
-    loop.future_tick(lambda *args: loop.stop())
-    loop.run()
-
-
 def assert_run_faster_than(loop, max_interval):
     start = time.time()
     loop.run()
