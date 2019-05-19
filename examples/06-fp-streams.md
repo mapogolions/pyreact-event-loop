@@ -8,24 +8,6 @@ def noop():
     pass
 
 
-def empty_stream(cb):
-    return noop
-
-
-def of(x):
-    def func(cb):
-        cb(x)
-        return noop
-    return func
-
-
-def prepend(x, stream):
-    def func(cb):
-        cb(x)
-        return stream(cb)
-    return func
-
-
 def later(delay):
     def func(f):
         timer = loop.add_timer(delay, f)
@@ -33,7 +15,7 @@ def later(delay):
     return func
 
 
-def of_many(delay, seq):
+def streamof(seq, delay=1e-4):
     def func(cb):
         it, stream, unsubcribe = iter(seq), later(delay), noop
         def doit():
@@ -72,8 +54,8 @@ def infinite_seq():
 
 
 loop = event_loop.SelectLoop()
-sequence = of_many(0.5, infinite_seq())
-even_nums = filter_stream(lambda x: x % 2 == 0, sequence)
+nums = streamof(infinite_seq(), delay=0.5)
+even_nums = filter_stream(lambda x: x % 2 == 0, nums)
 unsubscribe = map_stream(lambda x: [x, x ** 2], even_nums)(print)
 loop.add_timer(8.1, unsubscribe)
 loop.run()

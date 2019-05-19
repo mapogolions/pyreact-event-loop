@@ -20,16 +20,17 @@ def test_order_calls_of_timers(timers, mock):
 
 
 def test_periodic_timer_will_be_left(timers, mock):
-        timers.add(event_loop.timer.Timer(0, mock))
-        timers.add(event_loop.timer.Timer(0, mock, periodic=True))
-        time.sleep(0.1)
-        timers.tick()
-        assert mock.call_count == 2
+    timers.add(event_loop.timer.Timer(0, mock))
+    timers.add(event_loop.timer.Timer(0, mock, periodic=True))
+    time.sleep(0.1)
+    timers.tick()
+    assert mock.call_count == 2
 
 
 def test_call_all_timers(timers, mock):
     for interval in [0, 0, 0]:
         timers.add(event_loop.timer.Timer(interval, mock))
+
     time.sleep(0.1)
     timers.tick()
     assert timers.empty()
@@ -39,6 +40,7 @@ def test_call_all_timers(timers, mock):
 def test_call_one_timer(timers, mock):
     for interval in [3, 0, 4]:
         timers.add(event_loop.timer.Timer(interval, mock))
+
     time.sleep(0.1)
     timers.tick()
     mock.assert_called_once()
@@ -58,6 +60,7 @@ def test_empty(timers):
 def test_add_timer(timers):
     for interval in range(2, 5):
         timers.add(event_loop.timer.Timer(interval, lambda: None))
+
     assert not timers.empty()
 
 
@@ -72,6 +75,7 @@ def test_cancel_timer(timers):
 def test_get_first_timer(timers):
     for interval in range(4, 8):
         timers.add(event_loop.timer.Timer(interval, lambda: None))
+
     _, first_timer = timers.get_first()
     assert first_timer.interval == 4
 
