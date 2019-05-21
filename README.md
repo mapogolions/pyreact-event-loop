@@ -1,6 +1,5 @@
 ## Pyreact event loop
 
-
 It's modest attempt to implement the reactor pattern to break the traditional synchronous flow. The event loop uses a single thread and is responsible for scheduling asynchronous operations.
 
 
@@ -25,9 +24,9 @@ loop.run()
 In python needs to explicitly define the event loop.
 
 
-### ... by standing on the shoulders of Giants
+### By standing on the shoulders of [Giants](https://reactphp.org/event-loop/)
 
-`Pyreact-event-loop` based on `ReactPHP event loop` component.
+`Pyreact-event-loop` based on [`ReactPHP event loop`](https://reactphp.org/event-loop/) component.
 
 There are three available implementations:
 
@@ -35,8 +34,6 @@ There are three available implementations:
 * `LibevLoop` uses the [`mood.event`](https://github.com/lekma/mood.event) python `libev` interface
 * `LibuvLoop` uses the [`pyuv`](https://github.com/saghul/pyuv) python interface for `libuv`
 
-
-[For more details see](https://reactphp.org/event-loop/)
 
 ### Examples
 
@@ -46,6 +43,7 @@ There are three available implementations:
 * [signals](./examples/04-signals.md)
 * [echo server](./examples/05-echo-server.md)
 * [fp streams](./examples/06-fp-streams.md)
+
 
 ### How to use
 
