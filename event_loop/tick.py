@@ -12,6 +12,8 @@ class FutureTickQueue:
         self.queue.put(listener)
 
     def tick(self):
-        while not self.queue.empty():
+        amount = self.queue.qsize()
+        while amount > 0:
+            amount -= 1
             listener = self.queue.get()
             listener()

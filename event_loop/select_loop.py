@@ -141,12 +141,11 @@ class SelectLoop:
         )
 
     def notify(self, streams):
-        if not streams:
-            return
-        ready_to_read, ready_to_write, _ = streams
-        for stream in ready_to_read:
-            listener = self.read_listeners[hash(stream)]
-            listener(stream)
-        for stream in ready_to_write:
-            listener = self.write_listeners[hash(stream)]
-            listener(stream)
+        if streams:
+            ready_to_read, ready_to_write, _ = streams
+            for stream in ready_to_read:
+                listener = self.read_listeners[hash(stream)]
+                listener(stream)
+            for stream in ready_to_write:
+                listener = self.write_listeners[hash(stream)]
+                listener(stream)

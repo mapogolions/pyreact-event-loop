@@ -95,6 +95,24 @@ def test_remove_read_stream_after_reading(loop, mock, socket_pair):
     mock.assert_called_once()
 
 
+def test_remove_stream_for_read_only(loop, mock, socket_pair):
+    loop.add_read_stream(socket_pair[0], lambda stream: mock("read"))
+    loop.add_write_stream(socket_pair[1], lambda stream: mock("write"))
+    loop.remove_read_stream(socket_pair[0])
+    socket_pair[1].send(b"foo")
+    loop.next_tick()
+    assert mock.call_args_list == [unittest.mock.call("write")]
+
+
+def test_remove_stream_for_write_only(loop, mock, socket_pair):
+    socket_pair[1].send(b"bar")
+    loop.add_read_stream(socket_pair[0], lambda stream: mock("read"))
+    loop.add_write_stream(socket_pair[1], lambda stream: mock("write"))
+    loop.remove_write_stream(socket_pair[1])
+    loop.next_tick()
+    assert mock.call_args_list == [unittest.mock.call("read")]
+
+
 def test_remove_write_stream_after_writing(loop, mock, socket_pair):
     loop.add_write_stream(socket_pair[1], mock)
     loop.next_tick()
@@ -145,6 +163,32 @@ def test_sends_message_to_the_read_stream_implicitly(loop, mock, socket_pair):
     mock.assert_called_once()
 
 
+def test_future_tick(loop, mock):
+    loop.future_tick(lambda: mock(1))
+    loop.future_tick(lambda: mock(2))
+    loop.run()
+    expected = [unittest.mock.call(1), unittest.mock.call(2)]
+    assert mock.call_args_list == expected
+
+
+def test_handle_available_io_between_ticks(loop, mock, socket_pair):
+    def handle_write_stream(stream):
+        mock("stream")
+        loop.remove_write_stream(stream)
+
+    def rec_future_tick():
+        mock(1)
+        loop.future_tick(lambda *args: mock(2))
+
+    loop.add_write_stream(socket_pair[1], handle_write_stream)
+    loop.future_tick(rec_future_tick)
+    loop.run()
+    expected = [unittest.mock.call(1),
+                unittest.mock.call("stream"),
+                unittest.mock.call(2)]
+    assert mock.call_args_list == expected
+
+
 def test_future_tick_event_generated_by_future_tick(loop, mock):
     loop.future_tick(lambda: loop.future_tick(mock))
     loop.run()
@@ -155,13 +199,6 @@ def test_future_tick_event_generated_by_timer(loop, mock):
     loop.add_timer(0.01, lambda: loop.future_tick(mock))
     loop.run()
     mock.assert_called_once()
-
-def test_future_tick(loop, mock):
-    loop.future_tick(lambda: mock(1))
-    loop.future_tick(lambda: mock(2))
-    loop.run()
-    expected = [unittest.mock.call(1), unittest.mock.call(2)]
-    assert mock.call_args_list == expected
 
 
 def test_future_tick_fires_before_IO(loop, mock, socket_pair):
