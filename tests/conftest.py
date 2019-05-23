@@ -15,3 +15,8 @@ def socket_pair():
 @pytest.fixture
 def mock():
     return unittest.mock.Mock()
+
+
+@pytest.fixture
+def tick_timeout():
+    return 0.02
