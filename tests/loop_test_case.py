@@ -153,6 +153,13 @@ def test_sends_message_to_the_read_stream_implicitly(loop, mock, socket_pair):
     mock.assert_called_once()
 
 
+def test_stop_should_prevent_run_from_blocking(loop, mock, tick_timeout):
+    loop.add_timer(3, mock)
+    loop.future_tick(loop.stop)
+    testkit.assert_run_faster_than(loop, tick_timeout * 2)
+    mock.assert_not_called()
+
+
 def test_future_tick(loop, mock):
     loop.future_tick(lambda: mock(1))
     loop.future_tick(lambda: mock(2))
