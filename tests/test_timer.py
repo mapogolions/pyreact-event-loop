@@ -10,7 +10,7 @@ def timers():
     return event_loop.timer.Timers()
 
 
-def test_order_calls_of_timers(timers, mock):
+def test_order_of_execution_of_timers(timers, mock):
     timers.add(event_loop.timer.Timer(0, lambda: mock(1)))
     timers.add(event_loop.timer.Timer(0, lambda: mock(2)))
     time.sleep(0.1)
@@ -27,7 +27,7 @@ def test_periodic_timer_will_be_left(timers, mock):
     assert mock.call_count == 2
 
 
-def test_call_all_timers(timers, mock):
+def test_immediate_execution_of_all_timers(timers, mock):
     for interval in [0, 0, 0]:
         timers.add(event_loop.timer.Timer(interval, mock))
 
@@ -37,7 +37,7 @@ def test_call_all_timers(timers, mock):
     assert mock.call_count == 3
 
 
-def test_call_one_timer(timers, mock):
+def test_only_some_timers_will_be_fulfilled(timers, mock):
     for interval in [3, 0, 4]:
         timers.add(event_loop.timer.Timer(interval, mock))
 
@@ -46,14 +46,15 @@ def test_call_one_timer(timers, mock):
     mock.assert_called_once()
 
 
-def test_eager_call_of_timers(timers, mock):
+def test_timers_are_not_ready_yet(timers, mock):
     for interval in [10, 5, 3]:
         timers.add(event_loop.timer.Timer(interval, mock))
+
     timers.tick()
     mock.assert_not_called()
 
 
-def test_empty(timers):
+def test_no_registered_timers(timers):
     assert timers.empty()
 
 
@@ -83,12 +84,6 @@ def test_get_first_timer(timers):
 def test_get_first_timer_if_schedule_is_empty(timers):
     timers = event_loop.timer.Timers()
     assert timers.get_first() is None
-
-
-def test_get_time(timers):
-    assert timers.time is None
-    assert time.time() <= timers.get_time()
-    assert time.time() >= timers.get_time()
 
 
 def test_contains(timers, mock):

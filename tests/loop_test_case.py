@@ -146,19 +146,9 @@ def test_write_stream_removes_itself(loop, mock, socket_pair):
     assert mock.call_args_list == expected
 
 
-def test_cleanup_before_mock_call(loop, mock, socket_pair):
-    def cleanup(stream):
-        loop.remove_read_stream(stream)
-        loop.remove_write_stream(stream)
-
-    loop.add_read_stream(socket_pair[0], mock)
-    loop.add_write_stream(socket_pair[0], cleanup)
-    mock.assert_not_called()
-
-
 def test_sends_message_to_the_read_stream_implicitly(loop, mock, socket_pair):
     loop.add_read_stream(socket_pair[0], mock)
-    socket_pair[1].close()
+    socket_pair[1].close()  # implicitly
     loop.next_tick()
     mock.assert_called_once()
 

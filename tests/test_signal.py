@@ -10,7 +10,7 @@ def signals():
     return event_loop.signal.Signals()
 
 
-def test_empty(signals):
+def test_no_registered_signals(signals):
     assert signals.empty()
 
 

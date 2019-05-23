@@ -9,7 +9,7 @@ def future_tick_queue():
     return event_loop.tick.FutureTickQueue()
 
 
-def test_tick_queue_is_empty(future_tick_queue):
+def test_tick_no_registered_listeners(future_tick_queue):
     assert future_tick_queue.empty()
 
 
