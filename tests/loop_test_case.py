@@ -160,6 +160,16 @@ def test_stop_should_prevent_run_from_blocking(loop, mock, tick_timeout):
     mock.assert_not_called()
 
 
+def test_run_waits_for_future_tick_events(loop, mock, socket_pair):
+    def handle(stream):
+        loop.remove_write_stream(stream)
+        loop.future_tick(mock)
+
+    loop.add_write_stream(socket_pair[0], handle)
+    loop.run()
+    mock.not_called_called()
+
+
 def test_future_tick(loop, mock):
     loop.future_tick(lambda: mock(1))
     loop.future_tick(lambda: mock(2))
