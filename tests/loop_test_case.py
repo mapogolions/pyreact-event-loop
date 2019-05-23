@@ -9,8 +9,8 @@ import unittest
 import tests.testkit as testkit
 
 
-def test_loop_without_resources(loop):
-    testkit.assert_run_faster_than(loop, 0.02)
+def test_loop_without_resources(loop, tick_timeout):
+    testkit.assert_run_faster_than(loop, tick_timeout)
 
 
 def test_future_tick_handler_can_cancel_registered_stream(loop, mock, socket_pair):
@@ -274,10 +274,10 @@ def test_read_from_the_write_only_stream(loop, mock, socket_pair):
     mock.assert_called_once()
 
 
-def test_timer_inteval_can_be_far_in_future(loop, mock):
+def test_timer_inteval_can_be_far_in_future(loop, mock, tick_timeout):
     timer = loop.add_timer(10 ** 6, mock)
     loop.future_tick(lambda: loop.cancel_timer(timer))
-    testkit.assert_run_faster_than(loop, 0.02)
+    testkit.assert_run_faster_than(loop, tick_timeout)
 
 
 def test_signals_are_not_handled_without_the_running_loop(loop, mock):
