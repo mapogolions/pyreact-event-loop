@@ -43,6 +43,7 @@ There are three available implementations:
 * [signals](./examples/04-signals.md)
 * [echo server](./examples/05-echo-server.md)
 * [fp streams](./examples/06-fp-streams.md)
+* [non-blocking iteration](./examples/07-non-blocking-iteration.md)
 
 
 ### How to use
