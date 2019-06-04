@@ -38,7 +38,7 @@ def foreach(fn, source):
 numbers = list(range(10**2))
 loop = event_loop.LibuvLoop()
 loop.add_timer(0, lambda: print("timeout 0"))
-timer = loop.add_periodic_timer(0.005, lambda *args: print("-" * 10))
+timer = loop.add_periodic_timer(0.005, lambda: print("-" * 10))
 loop.future_tick(lambda: foreach(print, range(10**3)))  # non-blocking operation
 loop.run()
 ```
