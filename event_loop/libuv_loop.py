@@ -69,7 +69,9 @@ class LibuvLoop:
             periodic=True
         )
         uv_timer = libuv.Timer(self.uv_loop)
-        uv_timer.start(timer.callback, timer.interval, timer.interval)
+        uv_timer.start(lambda *args: timer.callback(),
+                       timer.interval,
+                       timer.interval)
         self.timers[hash(timer)] = uv_timer
         return timer
 

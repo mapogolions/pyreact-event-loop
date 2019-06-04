@@ -69,7 +69,7 @@ class LibevLoop:
         ev_timer = self.ev_loop.timer(
             timer.interval,
             timer.interval,
-            timer.callback
+            lambda *args: timer.callback()
         )
         ev_timer.start()
         self.timers[key] = ev_timer
