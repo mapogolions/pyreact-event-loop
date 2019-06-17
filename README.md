@@ -1,6 +1,6 @@
 ## Pyreact event loop
 
-[![MIT license](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE.txt)
+[![GitHub license](https://img.shields.io/github/license/Naereen/StrapDown.js.svg)](./LICENSE.txt)
 
 It's modest attempt to implement the reactor pattern to break the traditional synchronous flow. The event loop uses a single thread and is responsible for scheduling asynchronous operations.
 
