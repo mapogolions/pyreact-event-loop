@@ -1,6 +1,6 @@
 ## Pyreact event loop
 
-[![Open Source Love](https://badges.frapsoft.com/os/v1/open-source.png?v=103)](https://github.com/mapogolions/pyreact-event-loop) [![Build Status](https://travis-ci.org/mapogolions/pyreact-event-loop.svg?branch=master)](https://travis-ci.org/mapogolions/pyreact-event-loop) [![GitHub license](https://img.shields.io/github/license/Naereen/StrapDown.js.svg)](./LICENSE.txt)
+[![Open Source Love](https://badges.frapsoft.com/os/v1/open-source.png?v=103)](https://github.com/mapogolions/pyreact-event-loop) [![Build Status](https://travis-ci.org/mapogolions/pyreact-event-loop.svg?branch=master)](https://travis-ci.org/mapogolions/pyreact-event-loop) [![Coverage Status](https://coveralls.io/repos/github/mapogolions/pyreact-event-loop/badge.svg?branch=master)](https://coveralls.io/github/mapogolions/pyreact-event-loop?branch=master) [![GitHub license](https://img.shields.io/github/license/Naereen/StrapDown.js.svg)](./LICENSE.txt)
 
 It's modest attempt to implement the reactor pattern to break the traditional synchronous flow. The event loop uses a single thread and is responsible for scheduling asynchronous operations.
 
