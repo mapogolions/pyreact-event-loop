@@ -62,3 +62,5 @@ There are three available implementations:
 >>> loop.add_periodic_timer(2, lambda: print('tick'))
 >>> loop.run()
 ```
+
+__[For deployment see .travis.yml](./travis.yml)__
