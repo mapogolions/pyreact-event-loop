@@ -63,4 +63,4 @@ There are three available implementations:
 >>> loop.run()
 ```
 
-__[For deployment see .travis.yml](./travis.yml)__
+__[For deployment see .travis.yml](./.travis.yml)__
