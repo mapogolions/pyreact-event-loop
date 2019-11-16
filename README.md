@@ -19,7 +19,7 @@ the same things with `pyreact-event-loop`:
 ```python
 loop = event_loop.SelectLoop()
 loop.add_timer(1, lambda: print("world!"))
-print("Hello ")
+loop.future_tick(lambda: print("Hello "))
 loop.run()
 ```
 
