@@ -47,20 +47,14 @@ There are three available implementations:
 * [fp streams](./examples/06-fp-streams.md)
 * [non-blocking iteration](./examples/07-non-blocking-iteration.md)
 
-
 ### How to use
 
 ```sh
-(env) $ git clone <url>
-(env) $ cd project
-(env) $ pip install -r requirements.txt
-(env) $ pytest
-(env) $ python setup.py install
-(env) $ python
->>> import event_loop
->>> loop = event_loop.SelectLoop()
->>> loop.add_periodic_timer(2, lambda: print('tick'))
->>> loop.run()
+docker build github.com/mapogolions/pyreact-event-loop -t mapogolions/eventloop
+docker run -it mapogolions/eventloop # ./timers.py
+# or could pass a file name
+docker run -it mapogolions/eventloop ./periodic.py
+docker run -it mapogolions/eventloop ./fp-streams.py
 ```
 
 __[For deployment see .travis.yml](./.travis.yml)__
