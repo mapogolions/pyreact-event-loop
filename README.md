@@ -52,7 +52,7 @@ There are three available implementations:
 ```sh
 docker build github.com/mapogolions/pyreact-event-loop -t mapogolions/eventloop
 docker run -it mapogolions/eventloop # ./timers.py
-# or could pass a file name
+# or you could pass a relative file path
 docker run -it mapogolions/eventloop ./periodic.py
 docker run -it mapogolions/eventloop ./fp-streams.py
 ```
