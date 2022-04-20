@@ -39,13 +39,13 @@ There are three available implementations:
 
 ### Examples
 
-* [timers](./examples/01-timers.md)
-* [periodic timers](./examples/02-periodic.md)
-* [ticks](./examples/03-ticks.md)
-* [signals](./examples/04-signals.md)
-* [echo server](./examples/05-echo-server.md)
-* [fp streams](./examples/06-fp-streams.md)
-* [non-blocking iteration](./examples/07-non-blocking-iteration.md)
+* [timers](./examples/01-timers.py)
+* [periodic timers](./examples/02-periodic.py)
+* [ticks](./examples/03-ticks.py)
+* [signals](./examples/04-signals.py)
+* [echo server](./examples/05-echo-server.py)
+* [fp streams](./examples/06-fp-streams.py)
+* [non-blocking iteration](./examples/07-non-blocking-iteration.py)
 
 ### How to use
 
