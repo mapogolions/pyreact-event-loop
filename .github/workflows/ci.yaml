@@ -20,7 +20,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libev-dev libuv-dev
+          sudo apt-get install -y build-essential python3-dev libev-dev libuv1-dev
 
       - name: Install Python dependencies
         run: |
